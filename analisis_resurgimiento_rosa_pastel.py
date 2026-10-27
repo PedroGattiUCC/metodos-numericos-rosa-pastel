@@ -13,167 +13,294 @@ Métodos usados:
   3. Diferenciación numérica (adelante, atrás, centrada) -> ritmo de streams y pico
 """
 
+import csv
 import os
+from datetime import date, timedelta
+
 import numpy as np
 import matplotlib.pyplot as plt
 
-# -------------------------------------------------------------
-# DATOS REALES
-# Streams semanales de 'Rosa Pastel' en el chart semanal de Spotify México.
-# Fuente: kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html (datos de charts.spotify.com)
-# Son 47 semanas consecutivas de 2023 (fecha = cierre de la semana del chart).
-# -------------------------------------------------------------
-DATOS = [
-    ("2023-01-26", 1137349), ("2023-02-02", 1445318), ("2023-02-09", 1417458), ("2023-02-16", 1667194),
-    ("2023-02-23", 1778948), ("2023-03-02", 1889805), ("2023-03-09", 1954026), ("2023-03-16", 2169923),
-    ("2023-03-23", 2635047), ("2023-03-30", 2788541), ("2023-04-06", 2564692), ("2023-04-13", 2148814),
-    ("2023-04-20", 2221385), ("2023-04-27", 2368056), ("2023-05-04", 2217941), ("2023-05-11", 2277461),
-    ("2023-05-18", 2647092), ("2023-05-25", 2617613), ("2023-06-01", 2842061), ("2023-06-08", 2899192),
-    ("2023-06-15", 3024138), ("2023-06-22", 3092700), ("2023-06-29", 3160985), ("2023-07-06", 3102254),
-    ("2023-07-13", 3084357), ("2023-07-20", 3563141), ("2023-07-27", 4170775), ("2023-08-03", 3508445),
-    ("2023-08-10", 3799664), ("2023-08-17", 3829770), ("2023-08-24", 3612550), ("2023-08-31", 3507013),
-    ("2023-09-07", 4064808), ("2023-09-14", 3759711), ("2023-09-21", 3380414), ("2023-09-28", 3253511),
-    ("2023-10-05", 3135938), ("2023-10-12", 2962324), ("2023-10-19", 2770651), ("2023-10-26", 2736409),
-    ("2023-11-02", 3060277), ("2023-11-09", 3068245), ("2023-11-16", 3244273), ("2023-11-23", 3051800),
-    ("2023-11-30", 3246738), ("2023-12-07", 3206277), ("2023-12-14", 2811829),
+
+# Para agregar una canción, alcanza con sumar una tupla a esta lista.
+CANCIONES = [
+    ("Rosa Pastel (Belanova)", "datos/rosa_pastel_belanova.csv"),
+    ("Ella Baila Sola (Eslabón Armado y Peso Pluma)", "datos/ella_baila_sola_eslabon_armado_peso_pluma.csv"),
+    ("Tití me preguntó (Bad Bunny)", "datos/titi_me_pregunto_bad_bunny.csv"),
 ]
+CARPETA = os.path.dirname(os.path.abspath(__file__))
+TOLERANCIA = 1e-4  # error relativo porcentual, igual al trabajo original
 
 
-def main():
-    # -------------------------------------------------------------
-    # 1. DATOS: t = semana (0 = semana del 26/01/2023), streams en millones
-    # -------------------------------------------------------------
-    fechas = [d for d, _ in DATOS]
-    weekly_streams = np.array([v for _, v in DATOS], dtype=float) / 1e6
-    t = np.arange(len(DATOS), dtype=float)
-    S_accum = np.cumsum(weekly_streams)  # S(t): streams acumulados al cierre de la semana t
-    n = len(t)
+def cargar_csv(ruta):
+    """Lee fecha,streams, omite comentarios y convierte los streams a millones."""
+    fechas = []
+    streams = []
+    with open(ruta, encoding="utf-8", newline="") as archivo:
+        filas = csv.DictReader(linea for linea in archivo
+                               if linea.strip() and not linea.lstrip().startswith("#"))
+        for fila in filas:
+            fecha = date.fromisoformat(fila["fecha"])
+            valor = int(fila["streams"])
+            if valor < 0:
+                raise ValueError("Los streams no pueden ser negativos.")
+            if fechas and (fecha - date.fromisoformat(fechas[-1])).days != 7:
+                raise ValueError("Las fechas deben ser semanas consecutivas, separadas por 7 días.")
+            fechas.append(fecha.isoformat())
+            streams.append(valor)
+    return fechas, np.array(streams, dtype=float) / 1e6
 
+
+# Compatibilidad con no_subir/generar_excel.py: fechas ISO y streams enteros.
+_fechas_rosa, _streams_rosa = cargar_csv(os.path.join(CARPETA, CANCIONES[0][1]))
+DATOS = [(fecha, int(round(valor * 1e6)))
+         for fecha, valor in zip(_fechas_rosa, _streams_rosa)]
+
+
+def error_porcentual(nuevo, anterior):
+    """Evita dividir por cero si una raíz cae en la semana cero."""
+    if nuevo == 0:
+        return 0.0 if anterior == 0 else float("inf")
+    return abs((nuevo - anterior) / nuevo) * 100.0
+
+
+def biseccion(f, izquierda, derecha, detalle=False):
+    """Bisección escrita a mano; requiere un intervalo con cambio de signo."""
+    if f(izquierda) == 0:
+        return izquierda, 0, []
+    if f(derecha) == 0:
+        return derecha, 0, []
+    if f(izquierda) * f(derecha) > 0:
+        raise ValueError("Bisección requiere un cambio de signo.")
+    if detalle:
+        print(f"{'Iter':^6}|{'a':^10}|{'b':^10}|{'xr':^12}|{'f(a)':^10}|{'f(xr)':^10}|{'|Ea%|':^12}")
+        print("-" * 74)
+    anterior = None
+    registros = []
+    for it in range(1, 101):
+        xr = (izquierda + derecha) / 2.0
+        fa, fxr = f(izquierda), f(xr)
+        ea = error_porcentual(xr, anterior) if anterior is not None else 100.0
+        registros.append((it, ea))
+        if detalle:
+            print(f"{it:^6d}|{izquierda:^10.5f}|{derecha:^10.5f}|{xr:^12.6f}|{fa:^10.4f}|{fxr:^10.4f}|{ea:^12.6f}")
+        if fxr == 0 or ea < TOLERANCIA:
+            return xr, it, registros
+        if fa * fxr < 0:
+            derecha = xr
+        else:
+            izquierda = xr
+        anterior = xr
+    return None, it, registros  # no presentar como raíz si no hubo convergencia
+
+
+def newton_raphson(f, df, inicial, limite, detalle=False):
+    """Newton escrito a mano, con controles de derivada y dominio observado."""
+    if detalle:
+        print(f"{'Iter':^6}|{'x_i':^12}|{'f(x_i)':^12}|{'f_prima(x_i)':^14}|{'x_i+1':^12}|{'|Ea%|':^12}")
+        print("-" * 72)
+    x = inicial
+    registros = []
+    if f(x) == 0:
+        return x, 0, registros
+    for it in range(1, 51):
+        fx, dfx = f(x), df(x)
+        if abs(dfx) < 1e-12:
+            break
+        siguiente = x - fx / dfx
+        if not np.isfinite(siguiente) or not 0 <= siguiente <= limite:
+            break
+        ea = error_porcentual(siguiente, x)
+        registros.append((it, ea))
+        if detalle:
+            print(f"{it:^6d}|{x:^12.6f}|{fx:^12.6f}|{dfx:^14.6f}|{siguiente:^12.6f}|{ea:^12.6f}")
+        x = siguiente
+        if f(x) == 0 or ea < TOLERANCIA:
+            return x, it, registros
+    return None, len(registros), registros
+
+
+def diferencias_finitas(acumulado):
+    """h = 1 semana; la centrada usa adelante/atrás en los extremos."""
+    n = len(acumulado)
+    adelante = np.full(n, np.nan)
+    atras = np.full(n, np.nan)
+    centrada = np.full(n, np.nan)
+    for i in range(n):
+        if i < n - 1:
+            adelante[i] = acumulado[i + 1] - acumulado[i]
+        if i > 0:
+            atras[i] = acumulado[i] - acumulado[i - 1]
+        if 0 < i < n - 1:
+            centrada[i] = (acumulado[i + 1] - acumulado[i - 1]) / 2.0
+    centrada[0] = adelante[0]
+    centrada[-1] = atras[-1]
+    return adelante, atras, centrada
+
+
+def analizar_cancion(nombre, ruta_csv, meta=100.0, detalle=False):
+    """Ajusta S(t), busca el hito y compara el pico del modelo con los datos.
+
+    Las semanas se cuentan desde t = 0. Un resultado de raíz None indica
+    que el hito no se pudo calcular dentro de las semanas observadas.
+    """
+    if not np.isfinite(meta) or meta <= 0:
+        raise ValueError("La meta debe ser un número positivo y finito.")
+    fechas, streams = cargar_csv(ruta_csv)
+    n = len(fechas)
+    if n < 5:
+        raise ValueError("Se necesitan al menos 5 semanas para la cúbica y su Sy/x.")
+    t = np.arange(n, dtype=float)
+    acumulado = np.cumsum(streams)
+    coeficientes = np.polyfit(t, acumulado, 3)
+    a, b, c, d = coeficientes
+    modelo = np.poly1d(coeficientes)
+    derivada = modelo.deriv()
+    sr = np.sum((acumulado - modelo(t)) ** 2)
+    st = np.sum((acumulado - np.mean(acumulado)) ** 2)
+    r2 = 1.0 - sr / st if st > 0 else float("nan")
+    syx = np.sqrt(sr / (n - 4))
+    adelante, atras, centrada = diferencias_finitas(acumulado)
+    # Pico real: la semana con más streams (equivale a la diferencia hacia atrás de S)
+    semana_pico_datos = int(np.argmax(streams))
+    t_pico = -b / (3.0 * a) if a != 0 else None
+    ritmo_pico = float(derivada(t_pico)) if t_pico is not None else None
+    pico_valido = bool(a < 0 and 0 <= t_pico <= n - 1)
+
+    resultado = {
+        "nombre": nombre, "n": n, "fechas": fechas, "streams": streams,
+        "t": t, "acumulado": acumulado, "total_millones": float(acumulado[-1]),
+        "coeficientes": coeficientes, "a": a, "b": b, "c": c, "d": d,
+        "modelo": modelo, "derivada": derivada, "r2": r2, "syx": syx,
+        "sr": sr, "st": st, "meta": meta, "intervalo": None,
+        "intervalo_modelo": None, "raiz_biseccion": None, "iteraciones_biseccion": 0,
+        "raiz_newton": None, "iteraciones_newton": 0, "t_lineal": None,
+        "registros_biseccion": [], "registros_newton": [], "fecha_hito": None,
+        "t_pico_modelo": t_pico, "ritmo_pico_modelo": ritmo_pico,
+        "pico_valido": pico_valido, "semana_pico_datos": semana_pico_datos,
+        "valor_pico_datos": float(streams[semana_pico_datos]),
+        "adelante": adelante, "atras": atras, "centrada": centrada,
+        "diagnostico": "aplica" if pico_valido else "no aplica",
+    }
+    if detalle:
+        imprimir_datos_y_regresion(resultado)
+        print("\n" + "=" * 80)
+        print(f"3. RAÍCES DE f(t) = S(t) - {meta:g} = 0")
+        print("=" * 80)
+
+    f = lambda x: modelo(x) - meta
+    if acumulado[-1] < meta:
+        print(f"{nombre}: no llega a la meta de {meta:g} M; se omiten las raíces.")
+    elif acumulado[0] >= meta:
+        print(f"{nombre}: la meta de {meta:g} M ya se alcanzó en t = 0; no se interpola ni se extrapolan raíces.")
+    else:
+        k = int(np.argmax(acumulado >= meta))
+        a0, b0 = t[k - 1], t[k]
+        resultado["intervalo"] = [float(a0), float(b0)]
+        resultado["t_lineal"] = t[k - 1] + (meta - acumulado[k - 1]) / (acumulado[k] - acumulado[k - 1])
+        if detalle:
+            print(f"\n3.1 BISECCIÓN. Intervalo inicial [{a0:.0f}, {b0:.0f}] "
+                  f"(S({a0:.0f}) = {acumulado[k-1]:.2f} < {meta:g} < S({b0:.0f}) = {acumulado[k]:.2f})")
+        # El cruce de los datos puede diferir del cruce de la curva ajustada.
+        if f(a0) * f(b0) > 0:
+            encontrado = False
+            for i in range(n - 1):
+                if f(t[i]) * f(t[i + 1]) <= 0:
+                    a0, b0 = t[i], t[i + 1]
+                    encontrado = True
+                    print(f"{nombre}: el intervalo de los datos no encierra la raíz del modelo; se usa [{a0:g}, {b0:g}].")
+                    break
+            if not encontrado:
+                a0 = b0 = None
+                print(f"{nombre}: el modelo no encierra la meta en las semanas observadas; se omiten las raíces.")
+        if a0 is not None:
+            resultado["intervalo_modelo"] = [float(a0), float(b0)]
+            raiz_bis, it_bis, registros_bis = biseccion(f, a0, b0, detalle)
+            resultado.update(raiz_biseccion=raiz_bis, iteraciones_biseccion=it_bis,
+                             registros_biseccion=registros_bis)
+            if detalle and raiz_bis is not None:
+                print(f">> Bisección: t* = {raiz_bis:.6f} semanas en {it_bis} iteraciones.")
+            if detalle:
+                print(f"\n3.2 NEWTON-RAPHSON. Valor inicial t0 = {a0:.0f}")
+            raiz_newton, it_newton, registros_newton = newton_raphson(f, derivada, a0, n - 1, detalle)
+            resultado.update(raiz_newton=raiz_newton, iteraciones_newton=it_newton,
+                             registros_newton=registros_newton)
+            if detalle and raiz_newton is not None:
+                print(f">> Newton-Raphson: t* = {raiz_newton:.6f} semanas en {it_newton} iteraciones.")
+            if raiz_bis is None or raiz_newton is None:
+                print(f"{nombre}: algún método no convergió; su raíz queda sin resultado.")
+            if raiz_newton is not None:
+                resultado["fecha_hito"] = (date.fromisoformat(fechas[0]) + timedelta(days=float(raiz_newton) * 7)).isoformat()
+        if detalle:
+            print(f"\nControl con interpolación lineal entre las semanas {k-1} y {k}: t = {resultado['t_lineal']:.4f} semanas")
+            if resultado["raiz_newton"] is not None:
+                print(f"Diferencia modelo - interpolación: {(resultado['raiz_newton'] - resultado['t_lineal'])*7:.2f} días "
+                      f"(error típico del ajuste: ±{syx:.2f} M streams)")
+    if detalle:
+        imprimir_diferencias(resultado)
+    if not pico_valido:
+        if a > 0:
+            motivo = "a > 0: la inflexión es un mínimo del ritmo"
+        elif a == 0:
+            motivo = "a = 0: no hay un máximo aislado del ritmo por inflexión"
+        else:
+            motivo = "la inflexión queda fuera de las semanas observadas"
+        print(f"{nombre}: la cúbica no detecta el pico ({motivo}).")
+    return resultado
+
+
+def imprimir_datos_y_regresion(r):
     print("=" * 80)
-    print("PROYECTO: MODELADO NUMÉRICO DEL RESURGIMIENTO DE 'ROSA PASTEL' (SPOTIFY MÉXICO 2023)")
+    if r["nombre"] == CANCIONES[0][0]:
+        print("PROYECTO: MODELADO NUMÉRICO DEL RESURGIMIENTO DE 'ROSA PASTEL' (SPOTIFY MÉXICO 2023)")
+    else:
+        print(f"PROYECTO: MODELADO NUMÉRICO DE {r['nombre'].upper()} (SPOTIFY MÉXICO)")
     print("Alumnos: Pedro Gatti, Facundo Grillo, Gonzalo Marin - UCC 2026")
     print("=" * 80)
     print("\n1. DATOS REALES (fuente: kworb.net / Spotify Charts México):")
     print(f"{'t':^5}|{'Semana':^12}|{'Streams semana (M)':^20}|{'Acumulado S(t) (M)':^20}")
     print("-" * 60)
-    for i in range(n):
-        print(f"{t[i]:^5.0f}|{fechas[i]:^12}|{weekly_streams[i]:^20.3f}|{S_accum[i]:^20.3f}")
-
-    # -------------------------------------------------------------
-    # 2. AJUSTE DE CURVAS: REGRESIÓN POLINÓMICA CÚBICA POR MÍNIMOS CUADRADOS
-    # -------------------------------------------------------------
-    # S(t) = a*t^3 + b*t^2 + c*t + d
-    coeffs = np.polyfit(t, S_accum, 3)  # resuelve las ecuaciones normales
-    a, b, c, d = coeffs
-    poly = np.poly1d(coeffs)
-    poly_deriv = poly.deriv()
-
-    y_pred = poly(t)
-    Sr = np.sum((S_accum - y_pred) ** 2)          # suma de cuadrados de los residuos
-    St = np.sum((S_accum - np.mean(S_accum)) ** 2)  # suma total de cuadrados
-    r2 = 1.0 - Sr / St                            # coeficiente de determinación
-    syx = np.sqrt(Sr / (n - 4))                   # error estándar (4 coeficientes estimados)
-
+    for i in range(r["n"]):
+        print(f"{r['t'][i]:^5.0f}|{r['fechas'][i]:^12}|{r['streams'][i]:^20.3f}|{r['acumulado'][i]:^20.3f}")
+    a, b, c, d = r["coeficientes"]
     print("\n" + "=" * 80)
     print("2. REGRESIÓN POLINÓMICA CÚBICA (MÍNIMOS CUADRADOS):")
     print("=" * 80)
     print(f"Modelo: S(t) = ({a:.6f})*t^3 + ({b:.6f})*t^2 + ({c:.6f})*t + ({d:.6f})")
-    print(f"Sr = {Sr:.4f}   St = {St:.4f}")
-    print(f"R^2 = {r2:.6f} ({r2*100:.2f}%)   Sy/x = {syx:.4f} M streams")
+    print(f"Sr = {r['sr']:.4f}   St = {r['st']:.4f}")
+    print(f"R^2 = {r['r2']:.6f} ({r['r2']*100:.2f}%)   Sy/x = {r['syx']:.4f} M streams")
 
-    # -------------------------------------------------------------
-    # 3. BÚSQUEDA DE RAÍCES: ¿EN QUÉ SEMANA SE LLEGA A 100 MILLONES?
-    # -------------------------------------------------------------
-    TARGET = 100.0
-    f = lambda x: poly(x) - TARGET
-    df = lambda x: poly_deriv(x)
-    tol = 1e-4  # error relativo porcentual
 
-    # Intervalo inicial tomado de la tabla: última semana con S < 100 y la siguiente
-    k = int(np.argmax(S_accum >= TARGET))
-    a0, b0 = t[k - 1], t[k]
-
-    print("\n" + "=" * 80)
-    print("3. RAÍCES DE f(t) = S(t) - 100 = 0")
-    print("=" * 80)
-
-    # 3.1 Bisección
-    print(f"\n3.1 BISECCIÓN. Intervalo inicial [{a0:.0f}, {b0:.0f}] "
-          f"(S({a0:.0f}) = {S_accum[k-1]:.2f} < 100 < S({b0:.0f}) = {S_accum[k]:.2f})")
-    print(f"{'Iter':^6}|{'a':^10}|{'b':^10}|{'xr':^12}|{'f(a)':^10}|{'f(xr)':^10}|{'|Ea%|':^12}")
-    print("-" * 74)
-    a_bis, b_bis = a0, b0
-    xr_old = None
-    bis_records = []
-    for it in range(1, 101):
-        xr = (a_bis + b_bis) / 2.0
-        fa, fxr = f(a_bis), f(xr)
-        ea = abs((xr - xr_old) / xr) * 100.0 if xr_old is not None else 100.0
-        bis_records.append((it, ea))
-        print(f"{it:^6d}|{a_bis:^10.5f}|{b_bis:^10.5f}|{xr:^12.6f}|{fa:^10.4f}|{fxr:^10.4f}|{ea:^12.6f}")
-        if ea < tol:
-            break
-        if fa * fxr < 0:
-            b_bis = xr
-        else:
-            a_bis = xr
-        xr_old = xr
-    root_bisection, bisection_iters = xr, it
-    print(f">> Bisección: t* = {root_bisection:.6f} semanas en {bisection_iters} iteraciones.")
-
-    # 3.2 Newton-Raphson
-    print(f"\n3.2 NEWTON-RAPHSON. Valor inicial t0 = {a0:.0f}")
-    print(f"{'Iter':^6}|{'x_i':^12}|{'f(x_i)':^12}|{'f_prima(x_i)':^14}|{'x_i+1':^12}|{'|Ea%|':^12}")
-    print("-" * 72)
-    x = a0
-    newton_records = []
-    for it in range(1, 51):
-        fx, dfx = f(x), df(x)
-        x_next = x - fx / dfx
-        ea = abs((x_next - x) / x_next) * 100.0
-        newton_records.append((it, ea))
-        print(f"{it:^6d}|{x:^12.6f}|{fx:^12.6f}|{dfx:^14.6f}|{x_next:^12.6f}|{ea:^12.6f}")
-        x = x_next
-        if ea < tol:
-            break
-    root_newton, newton_iters = x, it
-    print(f">> Newton-Raphson: t* = {root_newton:.6f} semanas en {newton_iters} iteraciones.")
-
-    # Control: interpolación lineal directa sobre los datos
-    t_lineal = t[k - 1] + (TARGET - S_accum[k - 1]) / (S_accum[k] - S_accum[k - 1])
-    print(f"\nControl con interpolación lineal entre las semanas {k-1} y {k}: t = {t_lineal:.4f} semanas")
-    print(f"Diferencia modelo - interpolación: {(root_newton - t_lineal)*7:.2f} días "
-          f"(error típico del ajuste: ±{syx:.2f} M streams)")
-
-    # -------------------------------------------------------------
-    # 4. DIFERENCIACIÓN NUMÉRICA: RITMO DE STREAMS dS/dt (h = 1 semana)
-    # -------------------------------------------------------------
+def imprimir_diferencias(r):
     print("\n" + "=" * 80)
     print("4. DIFERENCIACIÓN NUMÉRICA (h = 1 semana), en M streams/semana")
     print("=" * 80)
-    h = 1.0
     print(f"{'t':^5}|{'Adelante O(h)':^15}|{'Atrás O(h)':^13}|{'Centrada O(h^2)':^17}|{'Modelo S_prima(t)':^19}")
     print("-" * 74)
-    for i in range(n):
-        fwd = (S_accum[i + 1] - S_accum[i]) / h if i < n - 1 else np.nan
-        bwd = (S_accum[i] - S_accum[i - 1]) / h if i > 0 else np.nan
-        cnt = (S_accum[i + 1] - S_accum[i - 1]) / (2 * h) if 0 < i < n - 1 else np.nan
+    for i in range(r["n"]):
         fmt = lambda v, w: f"{v:^{w}.3f}" if not np.isnan(v) else f"{'---':^{w}}"
-        print(f"{t[i]:^5.0f}|{fmt(fwd, 15)}|{fmt(bwd, 13)}|{fmt(cnt, 17)}|{poly_deriv(t[i]):^19.3f}")
+        # La tabla conserva --- donde no existe una diferencia centrada pura.
+        cnt = r["centrada"][i] if 0 < i < r["n"] - 1 else np.nan
+        print(f"{r['t'][i]:^5.0f}|{fmt(r['adelante'][i], 15)}|{fmt(r['atras'][i], 13)}|{fmt(cnt, 17)}|{r['derivada'](r['t'][i]):^19.3f}")
+    if r["pico_valido"]:
+        print(f"\nPICO SEGÚN EL MODELO (S''(t) = 0): t = {r['t_pico_modelo']:.2f} semanas, "
+              f"ritmo = {r['ritmo_pico_modelo']:.3f} M streams/semana")
+    i = r["semana_pico_datos"]
+    print(f"PICO EN LOS DATOS (semana con más streams): semana {i} "
+          f"({r['fechas'][i]}), {r['valor_pico_datos']:.3f} M streams")
 
-    # Pico del ritmo de streams: S''(t) = 6at + 2b = 0
-    t_peak = -b / (3.0 * a)
-    peak_rate = df(t_peak)
-    i_max = int(np.argmax(weekly_streams))
-    print(f"\nPICO SEGÚN EL MODELO (S''(t) = 0): t = {t_peak:.2f} semanas, "
-          f"ritmo = {peak_rate:.3f} M streams/semana")
-    print(f"PICO EN LOS DATOS: semana {i_max} ({fechas[i_max]}), {weekly_streams[i_max]:.3f} M streams")
 
-    # -------------------------------------------------------------
-    # 5. GRÁFICOS
-    # -------------------------------------------------------------
-    output_dir = os.path.dirname(os.path.abspath(__file__))
-    t_dense = np.linspace(0, n - 1, 300)
+def graficar_rosa_pastel(r):
+    """Los mismos tres gráficos, con sus nombres y estilo originales."""
+    t, S_accum, weekly_streams = r["t"], r["acumulado"], r["streams"]
+    poly, poly_deriv = r["modelo"], r["derivada"]
+    r2, TARGET = r["r2"], r["meta"]
+    root_newton = r["raiz_newton"]
+    bis_records, newton_records = r["registros_biseccion"], r["registros_newton"]
+    bisection_iters, newton_iters = r["iteraciones_biseccion"], r["iteraciones_newton"]
+    t_peak, peak_rate = r["t_pico_modelo"], r["ritmo_pico_modelo"]
+    tol = TOLERANCIA
+    output_dir = CARPETA
+    t_dense = np.linspace(0, r["n"] - 1, 300)
 
     # Gráfico 1: ajuste de curva y hito de 100 M
     plt.figure(figsize=(10, 6), dpi=200)
@@ -217,7 +344,74 @@ def main():
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "grafico_3_derivada_tasa_viralidad.png"))
     plt.close()
-    print("\n[OK] Gráficos guardados en la carpeta del proyecto.")
+
+
+def fila_comparativa(r):
+    """Una misma fila para la tabla de consola y el archivo CSV."""
+    hito = r["raiz_newton"]
+    return {
+        "Canción": r["nombre"], "Semanas": r["n"],
+        "Total M": f"{r['total_millones']:.3f}", "R²": f"{r['r2']:.6f}",
+        "Sy/x M": f"{r['syx']:.4f}",
+        "Hito 100 M (semana Newton)": f"{hito:.6f}" if hito is not None else "sin resultado",
+        "Iter. bisección": r["iteraciones_biseccion"], "Iter. Newton": r["iteraciones_newton"],
+        "Pico modelo (semana)": f"{r['t_pico_modelo']:.2f}" if r["pico_valido"] else "no detecta",
+        "Pico datos (semana)": r["semana_pico_datos"],
+        "Pico datos (M/semana)": f"{r['valor_pico_datos']:.3f}",
+        "Diagnóstico": r["diagnostico"],
+    }
+
+
+def guardar_comparacion(resultados):
+    filas = [fila_comparativa(r) for r in resultados]
+    columnas = list(filas[0])
+    anchos = [max(len(col), *(len(str(fila[col])) for fila in filas)) for col in columnas]
+    print("\n5. COMPARACIÓN DE CANCIONES (t = 0 en la primera semana de cada CSV)")
+    print("Diagnóstico: aplica si la cúbica detecta un máximo del ritmo dentro del período.")
+    print(" | ".join(col.ljust(ancho) for col, ancho in zip(columnas, anchos)))
+    print("-+-".join("-" * ancho for ancho in anchos))
+    for fila in filas:
+        print(" | ".join(str(fila[col]).ljust(ancho) for col, ancho in zip(columnas, anchos)))
+    with open(os.path.join(CARPETA, "comparacion_canciones.csv"), "w", encoding="utf-8", newline="") as archivo:
+        escritor = csv.DictWriter(archivo, fieldnames=columnas)
+        escritor.writeheader()
+        escritor.writerows(filas)
+
+
+def graficar_comparacion(resultados):
+    # Una fila por canción: al agregar una tupla también se amplía este gráfico.
+    fig, ejes = plt.subplots(len(resultados), 1, figsize=(10, 4 * len(resultados)), dpi=200, squeeze=False)
+    for eje, r in zip(ejes[:, 0], resultados):
+        t_dense = np.linspace(0, r["n"] - 1, 300)
+        eje.bar(r["t"], r["streams"], width=0.7, color='#9b59b6', alpha=0.45,
+                label='Streams semanales medidos')
+        eje.plot(t_dense, r["derivada"](t_dense), color='#8e44ad', linewidth=2.2,
+                 label="Derivada del modelo $S'(t)$")
+        if r["pico_valido"]:
+            eje.axvline(r["t_pico_modelo"], color='#c0392b', linestyle='--', linewidth=1.8,
+                        label=f"Pico del modelo: t = {r['t_pico_modelo']:.1f} sem")
+        eje.scatter(r["semana_pico_datos"], r["valor_pico_datos"], color='#e67e22', marker='D',
+                    s=45, zorder=5, label=f"Pico de los datos: t = {r['semana_pico_datos']} sem")
+        eje.set_title(r["nombre"], fontsize=13, fontweight='bold')
+        eje.set_xlabel(f"Semanas desde {r['fechas'][0]} (t = 0)")
+        eje.set_ylabel("Millones de streams por semana")
+        eje.grid(True, linestyle='--', alpha=0.6)
+        eje.legend(loc='upper right', fontsize=8)
+    fig.tight_layout()
+    fig.savefig(os.path.join(CARPETA, "grafico_4_comparacion_canciones.png"))
+    plt.close(fig)
+
+
+def main():
+    resultados = []
+    for i, (nombre, ruta) in enumerate(CANCIONES):
+        resultado = analizar_cancion(nombre, os.path.join(CARPETA, ruta), detalle=(i == 0))
+        resultados.append(resultado)
+        if i == 0:
+            graficar_rosa_pastel(resultado)
+    guardar_comparacion(resultados)
+    graficar_comparacion(resultados)
+    print("\n[OK] Cuatro gráficos y comparacion_canciones.csv guardados en la carpeta del proyecto.")
 
 
 if __name__ == '__main__':

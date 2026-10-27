@@ -49,28 +49,60 @@ Resolución de $f(t) = S(t) - 100 = 0$ con una tolerancia de convergencia de $\v
 
 ## 📊 Resultados Principales
 
-- **Bondad de ajuste:** $R^2 \approx 99.8\%$ ($S_{y/x} \approx 0.72\text{ M}$ streams).
+- **Bondad de ajuste:** $R^2 \approx 99.95\%$ ($S_{y/x} \approx 0.927\text{ M}$ streams).
 - **Hito de 100 Millones:**
-  - **Bisección:** alcanzó la raíz en **18 iteraciones** ($t^* \approx 31.95\text{ semanas}$).
-  - **Newton-Raphson:** alcanzó la misma precisión en sólo **4 iteraciones**.
-- **Pico del ritmo de viralidad:** semana 27 a 29 (fines de julio / agosto 2023), alcanzando una tasa superior a los $4.1\text{ millones de streams/semana}$.
+  - **Bisección:** alcanzó la raíz en **15 iteraciones** ($t^* \approx 35.52\text{ semanas}$).
+  - **Newton-Raphson:** alcanzó la misma precisión en sólo **3 iteraciones**.
+- **Pico del ritmo de viralidad:** semana 26 (fines de julio de 2023), alcanzando una tasa de $4.171\text{ millones de streams/semana}$ en los datos ($t \approx 30.59\text{ semanas}$ según el modelo cúbico).
+
+---
+
+## 🔄 Generalización a Otras Canciones
+
+A pedido de la cátedra para evaluar la aplicabilidad del método como herramienta general de ingeniería, el flujo se modularizó mediante la función `analizar_cancion(nombre, csv, meta)`. Se contrastó el resurgimiento gradual de *Rosa Pastel* frente a dos estrenos comerciales masivos:
+
+| Canción | Semanas (desde) | Total M | R² | Sy/x M | Hito 100 M (semana, Newton) | Iter. bis./Newton | Pico modelo | Pico datos | Diagnóstico |
+|---|---|---|---|---|---|---|---|---|---|
+| Rosa Pastel (Belanova) | 47 (26/01/2023) | 132.9 | 0.999533 | 0.927 | 35.52 (≈1/10/2023) | 15 / 3 | semana 30.59 | semana 26, 4.171 M | aplica |
+| Ella Baila Sola (Eslabón Armado y Peso Pluma) | 52 (23/03/2023, estreno) | 409.6 | 0.996265 | 6.656 | 3.55 (≈16/04/2023) | 19 / 3 | no detecta (a = +0.005926) | semana 5, 26.140 M | no aplica |
+| Tití Me Preguntó (Bad Bunny) | 52 (12/05/2022, estreno) | 298.3 | 0.999692 | 1.596 | 9.87 (≈20/07/2022) | 17 / 3 | no detecta (a = +0.000279) | semana 6, 9.860 M | no aplica |
+
+### 🛠️ Cómo analizar otra canción
+
+Para incorporar y procesar una nueva canción con el método generalizado:
+
+1. **Descargar serie temporal:** Bajar el historial semanal de Spotify desde [Kworb.net](https://kworb.net/spotify/) para el país y canción deseada.
+2. **Crear archivo CSV en `datos/`:** Guardar el archivo en la carpeta `datos/` (ej. `datos/mi_cancion.csv`) con el formato estándar `fecha,streams` (fechas ISO `YYYY-MM-DD` separadas por 7 días y reproducciones semanales enteras).
+3. **Agregar la canción a la lista del script:** En `analisis_resurgimiento_rosa_pastel.py`, añadir una línea a la lista `CANCIONES`:
+   ```python
+   CANCIONES = [
+       ("Rosa Pastel (Belanova)", "datos/rosa_pastel_belanova.csv"),
+       # ...
+       ("Nombre Canción (Artista)", "datos/mi_cancion.csv"),
+   ]
+   ```
+4. **Ejecutar el script:** Al correr `python3 analisis_resurgimiento_rosa_pastel.py`, el sistema ajustará automáticamente la regresión cúbica, resolverá el hito de streams (bisección y Newton-Raphson), calculará las diferencias finitas, validará la regla de concavidad ($a < 0$) y actualizará `comparacion_canciones.csv` y `grafico_4_comparacion_canciones.png`.
 
 ---
 
 ## 📁 Estructura del Repositorio
 
 ```text
-├── analisis_resurgimiento_rosa_pastel.py      # Script principal con algoritmos numéricos y gráficos
-├── grafico_1_ajuste_curva_streams.png          # Visualización del ajuste cúbico y corte en 100M
-├── grafico_2_convergencia_biseccion_vs_newton.png # Comparativa de tasas de convergencia (escala log)
-├── grafico_3_derivada_tasa_viralidad.png       # Diferenciación numérica y pico de viralidad
-├── Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.pdf  # Informe técnico completo del proyecto
-├── Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx # Formato editable del informe
-├── Modelo_Numerico_Rosa_Pastel_Belanova.xlsx   # Planilla Excel con cálculos y tablas paso a paso
-├── Presentacion_Rosa_Pastel_Metodos_Numericos.pdf      # Diapositivas de defensa del proyecto
-├── Presentacion_Rosa_Pastel_Metodos_Numericos.pptx     # Presentación PowerPoint
-├── requirements.txt                            # Dependencias del entorno Python
-└── README.md                                   # Documentación general
+├── analisis_resurgimiento_rosa_pastel.py          # Script principal modularizado y generalizado
+├── comparacion_canciones.csv                       # Tabla comparativa de resultados entre canciones
+├── datos/                                          # Series temporales semanales en formato CSV (kworb.net)
+│   ├── ella_baila_sola_eslabon_armado_peso_pluma.csv
+│   ├── rosa_pastel_belanova.csv
+│   └── titi_me_pregunto_bad_bunny.csv
+├── grafico_1_ajuste_curva_streams.png              # Visualización del ajuste cúbico y corte en 100M
+├── grafico_2_convergencia_biseccion_vs_newton.png     # Comparativa de tasas de convergencia (escala log)
+├── grafico_3_derivada_tasa_viralidad.png           # Diferenciación numérica y pico de viralidad
+├── grafico_4_comparacion_canciones.png             # Comparativa de trayectorias y derivadas entre canciones
+├── Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx # Informe técnico completo del proyecto
+├── Modelo_Numerico_Rosa_Pastel_Belanova.xlsx       # Planilla Excel con cálculos y tablas paso a paso
+├── Presentacion_Rosa_Pastel_Metodos_Numericos.pptx # Presentación PowerPoint (11 diapositivas)
+├── requirements.txt                                # Dependencias del entorno Python
+└── README.md                                       # Documentación general
 ```
 
 ---
@@ -105,5 +137,8 @@ Para ejecutar el código de simulación y reproducir los resultados:
 
 ## 📚 Fuentes de Datos
 
-- **Spotify Charts México (2023):** Datos semanales recopilados a través de [Kworb.net](https://kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html) sobre el track *Rosa Pastel* de Belanova (47 semanas del año 2023).
+- **Spotify Charts México (Kworb.net):**
+  - Track *Rosa Pastel* de Belanova: [kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html](https://kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html)
+  - Track *Ella Baila Sola* de Eslabón Armado y Peso Pluma: [kworb.net/spotify/track/3qQbCzHBycnDpGskqOWY0E.html](https://kworb.net/spotify/track/3qQbCzHBycnDpGskqOWY0E.html)
+  - Track *Tití Me Preguntó* de Bad Bunny: [kworb.net/spotify/track/1IHWl5LamUGEuP4ozKQSXZ.html](https://kworb.net/spotify/track/1IHWl5LamUGEuP4ozKQSXZ.html)
 - **Bibliografía:** Chapra, S. C., & Canale, R. P. *Métodos Numéricos para Ingenieros*. McGraw-Hill.
