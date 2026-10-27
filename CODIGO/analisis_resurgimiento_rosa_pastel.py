@@ -31,6 +31,8 @@ CANCIONES = [
     ("Tití me preguntó (Bad Bunny)", "datos/titi_me_pregunto_bad_bunny.csv"),
 ]
 CARPETA = os.path.dirname(os.path.abspath(__file__))
+# Los gráficos van a la carpeta GRAFICOS/ de la raíz del repositorio
+GRAFICOS = os.path.normpath(os.path.join(CARPETA, os.pardir, "GRAFICOS"))
 TOLERANCIA = 1e-4  # error relativo porcentual, igual al trabajo original
 
 
@@ -51,12 +53,6 @@ def cargar_csv(ruta):
             fechas.append(fecha.isoformat())
             streams.append(valor)
     return fechas, np.array(streams, dtype=float) / 1e6
-
-
-# Compatibilidad con no_subir/generar_excel.py: fechas ISO y streams enteros.
-_fechas_rosa, _streams_rosa = cargar_csv(os.path.join(CARPETA, CANCIONES[0][1]))
-DATOS = [(fecha, int(round(valor * 1e6)))
-         for fecha, valor in zip(_fechas_rosa, _streams_rosa)]
 
 
 def error_porcentual(nuevo, anterior):
@@ -408,7 +404,7 @@ def graficar_rosa_pastel(r):
     bisection_iters, newton_iters = r["iteraciones_biseccion"], r["iteraciones_newton"]
     t_peak, peak_rate = r["t_pico_modelo"], r["ritmo_pico_modelo"]
     tol = TOLERANCIA
-    output_dir = CARPETA
+    output_dir = GRAFICOS
     t_dense = np.linspace(0, r["n"] - 1, 300)
 
     # Gráfico 1: ajuste de curva y hito de 100 M
@@ -516,11 +512,12 @@ def graficar_comparacion(resultados):
         eje.grid(True, linestyle='--', alpha=0.6)
         eje.legend(loc='upper right', fontsize=8)
     fig.tight_layout()
-    fig.savefig(os.path.join(CARPETA, "grafico_4_comparacion_canciones.png"))
+    fig.savefig(os.path.join(GRAFICOS, "grafico_4_comparacion_canciones.png"))
     plt.close(fig)
 
 
 def main():
+    os.makedirs(GRAFICOS, exist_ok=True)
     resultados = []
     for i, (nombre, ruta) in enumerate(CANCIONES):
         resultado = analizar_cancion(nombre, os.path.join(CARPETA, ruta), detalle=(i == 0))
@@ -529,7 +526,7 @@ def main():
             graficar_rosa_pastel(resultado)
     guardar_comparacion(resultados)
     graficar_comparacion(resultados)
-    print("\n[OK] Cuatro gráficos y comparacion_canciones.csv guardados en la carpeta del proyecto.")
+    print("\n[OK] Cuatro gráficos guardados en GRAFICOS/ y comparacion_canciones.csv en CODIGO/.")
 
 
 if __name__ == '__main__':

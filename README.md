@@ -80,8 +80,8 @@ A pedido de la cátedra para evaluar la aplicabilidad del método como herramien
 Para incorporar y procesar una nueva canción con el método generalizado:
 
 1. **Descargar serie temporal:** Bajar el historial semanal de Spotify desde [Kworb.net](https://kworb.net/spotify/) para el país y canción deseada.
-2. **Crear archivo CSV en `datos/`:** Guardar el archivo en la carpeta `datos/` (ej. `datos/mi_cancion.csv`) con el formato estándar `fecha,streams` (fechas ISO `YYYY-MM-DD` separadas por 7 días y reproducciones semanales enteras).
-3. **Agregar la canción a la lista del script:** En `analisis_resurgimiento_rosa_pastel.py`, añadir una línea a la lista `CANCIONES`:
+2. **Crear archivo CSV en `CODIGO/datos/`:** Guardar el archivo en esa carpeta (ej. `CODIGO/datos/mi_cancion.csv`) con el formato estándar `fecha,streams` (fechas ISO `YYYY-MM-DD` separadas por 7 días y reproducciones semanales enteras).
+3. **Agregar la canción a la lista del script:** En `CODIGO/analisis_resurgimiento_rosa_pastel.py`, añadir una línea a la lista `CANCIONES` (las rutas son relativas a `CODIGO/`):
    ```python
    CANCIONES = [
        ("Rosa Pastel (Belanova)", "datos/rosa_pastel_belanova.csv"),
@@ -89,28 +89,31 @@ Para incorporar y procesar una nueva canción con el método generalizado:
        ("Nombre Canción (Artista)", "datos/mi_cancion.csv"),
    ]
    ```
-4. **Ejecutar el script:** Al correr `python3 analisis_resurgimiento_rosa_pastel.py`, el sistema ajustará automáticamente la regresión cúbica, resolverá el hito de streams (bisección y Newton-Raphson), calculará las diferencias finitas, validará la regla de concavidad ($a < 0$) y actualizará `comparacion_canciones.csv` y `grafico_4_comparacion_canciones.png`.
+4. **Ejecutar el script:** Al correr `python3 CODIGO/analisis_resurgimiento_rosa_pastel.py`, el sistema ajustará automáticamente la regresión cúbica, resolverá el hito de streams (bisección y Newton-Raphson, sobre la regresión y la trazadora), calculará las diferencias finitas, validará la regla de concavidad ($a < 0$) y actualizará `CODIGO/comparacion_canciones.csv` y los gráficos de `GRAFICOS/`.
 
 ---
 
 ## 📁 Estructura del Repositorio
 
 ```text
-├── analisis_resurgimiento_rosa_pastel.py          # Script principal modularizado y generalizado
-├── comparacion_canciones.csv                       # Tabla comparativa de resultados entre canciones
-├── datos/                                          # Series temporales semanales en formato CSV (kworb.net)
-│   ├── ella_baila_sola_eslabon_armado_peso_pluma.csv
-│   ├── rosa_pastel_belanova.csv
-│   └── titi_me_pregunto_bad_bunny.csv
-├── grafico_1_ajuste_curva_streams.png              # Visualización del ajuste cúbico y corte en 100M
-├── grafico_2_convergencia_biseccion_vs_newton.png     # Comparativa de tasas de convergencia (escala log)
-├── grafico_3_derivada_tasa_viralidad.png           # Diferenciación numérica y pico de viralidad
-├── grafico_4_comparacion_canciones.png             # Comparativa de trayectorias y derivadas entre canciones
-├── Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx # Informe técnico completo del proyecto
-├── Modelo_Numerico_Rosa_Pastel_Belanova.xlsx       # Planilla Excel con cálculos y tablas paso a paso
-├── Presentacion_Rosa_Pastel_Metodos_Numericos.pptx # Presentación PowerPoint (14 diapositivas)
-├── requirements.txt                                # Dependencias del entorno Python
-└── README.md                                       # Documentación general
+├── CODIGO/
+│   ├── analisis_resurgimiento_rosa_pastel.py           # Script principal modularizado y generalizado
+│   ├── comparacion_canciones.csv                       # Tabla comparativa de resultados entre canciones
+│   └── datos/                                          # Series temporales semanales en formato CSV (kworb.net)
+│       ├── ella_baila_sola_eslabon_armado_peso_pluma.csv
+│       ├── rosa_pastel_belanova.csv
+│       └── titi_me_pregunto_bad_bunny.csv
+├── ENTREGABLES/
+│   ├── Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx  # Informe técnico completo del proyecto
+│   ├── Modelo_Numerico_Rosa_Pastel_Belanova.xlsx            # Planilla Excel con cálculos y tablas paso a paso
+│   └── Presentacion_Rosa_Pastel_Metodos_Numericos.pptx      # Presentación PowerPoint (14 diapositivas)
+├── GRAFICOS/                                           # Generados por el script
+│   ├── grafico_1_ajuste_curva_streams.png              # Ajuste cúbico, trazadora y corte en 100M
+│   ├── grafico_2_convergencia_biseccion_vs_newton.png  # Comparativa de convergencia (escala log)
+│   ├── grafico_3_derivada_tasa_viralidad.png           # Diferenciación numérica y pico de viralidad
+│   └── grafico_4_comparacion_canciones.png             # Derivadas y picos de las tres canciones
+├── requirements.txt                                    # Dependencias del entorno Python
+└── README.md                                           # Documentación general
 ```
 
 ---
@@ -138,7 +141,7 @@ Para ejecutar el código de simulación y reproducir los resultados:
 
 4. **Ejecutar el análisis:**
    ```bash
-   python3 analisis_resurgimiento_rosa_pastel.py
+   python3 CODIGO/analisis_resurgimiento_rosa_pastel.py
    ```
 
 ---
