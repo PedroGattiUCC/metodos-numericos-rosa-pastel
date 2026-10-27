@@ -1,4 +1,4 @@
-Canción,Semanas,Total M,R²,Sy/x M,Hito 100 M (semana Newton),Iter. bisección,Iter. Newton,Pico modelo (semana),Pico datos (semana),Pico datos (M/semana),Diagnóstico
-Rosa Pastel (Belanova),47,132.897,0.999533,0.9269,35.520148,15,3,30.59,26,4.171,aplica
-Ella Baila Sola (Eslabón Armado y Peso Pluma),52,409.578,0.996265,6.6560,3.552992,19,3,no detecta,5,26.140,no aplica
-Tití me preguntó (Bad Bunny),52,298.338,0.999692,1.5955,9.866106,17,3,no detecta,6,9.860,no aplica
+Canción,Semanas,Total M,R²,Sy/x M,Hito 100 M (semana Newton),Iter. bisección,Iter. Newton,Hito trazadora (semana),Interpolación lineal (semana),Incertidumbre modelo (días),Modelo - trazadora (días),Pico modelo (semana),Pico datos (semana),Pico datos (M/semana),Diagnóstico
+Rosa Pastel (Belanova),47,132.897,0.999533,0.9269,35.520148,15,3,35.124439,35.1269,1.92,2.77,30.59,26,4.171,aplica
+Ella Baila Sola (Eslabón Armado y Peso Pluma),52,409.578,0.996265,6.6560,3.552992,19,3,3.873569,3.8644,2.27,-2.24,no detecta,5,26.140,no aplica
+Tití me preguntó (Bad Bunny),52,298.338,0.999692,1.5955,9.866106,17,3,10.039542,10.0400,1.29,-1.21,no detecta,6,9.860,no aplica
