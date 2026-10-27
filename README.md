@@ -29,16 +29,22 @@ A través de herramientas numéricas fundamentales, el trabajo aborda tres inter
 
 ### 1. Ajuste de Curvas por Mínimos Cuadrados (Regresión Polinómica Cúbica)
 - **Modelo:** $S(t) = a\,t^3 + b\,t^2 + c\,t + d$
-- Resolución del sistema de ecuaciones normales para minimizar la suma de cuadrados de los residuos ($S_r$).
+- Resolución del sistema de ecuaciones normales para minimizar la suma de cuadrados de los residuos ($S_r$), mediante **eliminación gaussiana** programada a mano (triangulación y sustitución hacia atrás).
 - Evaluación de bondad de ajuste mediante coeficiente de determinación ($R^2$) y error estándar de la estimación ($S_{y/x}$).
+- Control de validez física: el modelo debe ser creciente ($S'(t) > 0$) en todo el período.
 
-### 2. Búsqueda de Raíces de Ecuaciones No Lineales
-Resolución de $f(t) = S(t) - 100 = 0$ con una tolerancia de convergencia de $\varepsilon_a < 10^{-4}\,\%$:
+### 2. Trazadora Cúbica Natural
+- Modelo de contraste que pasa exactamente por todos los datos medidos (algoritmo de Burden-Faires, pasos 1 a 7).
+
+### 3. Búsqueda de Raíces de Ecuaciones No Lineales
+Resolución de $f(t) = S(t) - 100 = 0$ con una tolerancia de convergencia de $\varepsilon_a < 10^{-4}\,\%$, sobre la regresión y sobre la trazadora:
 - **Método de Bisección (Cerrado):** Búsqueda sistemática por intervalo con convergencia lineal garantizada.
 - **Método de Newton-Raphson (Abierto):** Método iterativo $t_{i+1} = t_i - \frac{f(t_i)}{f'(t_i)}$ con convergencia cuadrática.
+- **Control:** interpolación lineal entre las dos semanas que encierran el cruce.
+- **Precisión real:** incertidumbre que el ajuste traslada al tiempo, $\Delta t \approx S_{y/x} / S'(t^*)$.
 - Comparación cuantitativa de velocidad y número de iteraciones requeridas.
 
-### 3. Diferenciación Numérica
+### 4. Diferenciación Numérica
 - Estimación del ritmo semanal de streams $S'(t) \approx \frac{dS}{dt}$ utilizando fórmulas de diferencias finitas:
   - **Diferencia finita hacia adelante:** $O(h)$
   - **Diferencia finita hacia atrás:** $O(h)$
@@ -51,8 +57,10 @@ Resolución de $f(t) = S(t) - 100 = 0$ con una tolerancia de convergencia de $\v
 
 - **Bondad de ajuste:** $R^2 \approx 99.95\%$ ($S_{y/x} \approx 0.927\text{ M}$ streams).
 - **Hito de 100 Millones:**
-  - **Bisección:** alcanzó la raíz en **15 iteraciones** ($t^* \approx 35.52\text{ semanas}$).
+  - **Bisección:** alcanzó la raíz de la regresión en **15 iteraciones** ($t^* \approx 35.52\text{ semanas}$).
   - **Newton-Raphson:** alcanzó la misma precisión en sólo **3 iteraciones**.
+  - **Trazadora cúbica natural:** $t^* \approx 35.124\text{ semanas}$ (≈ 29/09/2023), igual a la interpolación lineal de control ($35.127$).
+  - **Precisión:** la regresión se aparta 2.77 días de la trazadora, más que su incertidumbre $\Delta t \approx \pm 1.92$ días, por lo que se adopta el resultado de la trazadora.
 - **Pico del ritmo de viralidad:** semana 26 (fines de julio de 2023), alcanzando una tasa de $4.171\text{ millones de streams/semana}$ en los datos ($t \approx 30.59\text{ semanas}$ según el modelo cúbico).
 
 ---
@@ -100,7 +108,7 @@ Para incorporar y procesar una nueva canción con el método generalizado:
 ├── grafico_4_comparacion_canciones.png             # Comparativa de trayectorias y derivadas entre canciones
 ├── Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx # Informe técnico completo del proyecto
 ├── Modelo_Numerico_Rosa_Pastel_Belanova.xlsx       # Planilla Excel con cálculos y tablas paso a paso
-├── Presentacion_Rosa_Pastel_Metodos_Numericos.pptx # Presentación PowerPoint (11 diapositivas)
+├── Presentacion_Rosa_Pastel_Metodos_Numericos.pptx # Presentación PowerPoint (14 diapositivas)
 ├── requirements.txt                                # Dependencias del entorno Python
 └── README.md                                       # Documentación general
 ```

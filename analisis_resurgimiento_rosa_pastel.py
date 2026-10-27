@@ -9,8 +9,11 @@ Comisión: 46324 - Ciclo Lectivo: 2026-2
 
 Métodos usados:
   1. Regresión polinómica cúbica por mínimos cuadrados -> modelo continuo S(t)
-  2. Bisección y Newton-Raphson -> semana en que S(t) = 100 millones
-  3. Diferenciación numérica (adelante, atrás, centrada) -> ritmo de streams y pico
+     (ecuaciones normales resueltas por eliminación gaussiana)
+  2. Trazadora cúbica natural -> modelo de contraste que pasa por los datos
+  3. Bisección y Newton-Raphson -> semana en que S(t) = 100 millones
+     (sobre la regresión y sobre la trazadora, con interpolación lineal de control)
+  4. Diferenciación numérica (adelante, atrás, centrada) -> ritmo de streams y pico
 """
 
 import csv
@@ -63,6 +66,65 @@ def error_porcentual(nuevo, anterior):
     return abs((nuevo - anterior) / nuevo) * 100.0
 
 
+def eliminacion_gaussiana(A, b):
+    """Eliminación gaussiana (apunte 4.2): triangulación con m_ki = a_ki / a_ii
+    y sustitución hacia atrás."""
+    M = np.hstack([np.array(A, dtype=float), np.array(b, dtype=float).reshape(-1, 1)])
+    n = len(b)
+    for i in range(n - 1):
+        if M[i, i] == 0.0:
+            raise ZeroDivisionError(f"Pivote nulo en la fila {i + 1}.")
+        for k in range(i + 1, n):
+            m_ki = M[k, i] / M[i, i]
+            M[k, i:] = M[k, i:] - m_ki * M[i, i:]
+    x = np.zeros(n)
+    for i in range(n - 1, -1, -1):
+        x[i] = (M[i, n] - np.dot(M[i, i + 1:n], x[i + 1:n])) / M[i, i]
+    return x
+
+
+def regresion_polinomica(x, y, m):
+    """Mínimos cuadrados de grado m (extensión de la regresión lineal, apunte 5.2).
+    Ecuaciones normales: sum(x^(j+k)) * a_k = sum(x^j * y). Devuelve [a0, ..., am]."""
+    A = np.array([[np.sum(x ** (j + k)) for k in range(m + 1)] for j in range(m + 1)])
+    b = np.array([np.sum((x ** j) * y) for j in range(m + 1)])
+    return eliminacion_gaussiana(A, b), A, b
+
+
+def trazadora_cubica_natural(x, y):
+    """Trazadora cúbica natural (apunte 5.5, algoritmo de Burden-Faires, pasos 1 a 6).
+    Coeficientes de S_i(x) = a_i + b_i(x-x_i) + c_i(x-x_i)^2 + d_i(x-x_i)^3."""
+    N = len(x) - 1
+    a = np.array(y, dtype=float)
+    h = np.diff(x)                                               # PASO 1
+    alfa = np.zeros(N + 1)
+    for j in range(1, N):                                        # PASO 2
+        alfa[j] = 3.0 / h[j] * (a[j + 1] - a[j]) - 3.0 / h[j - 1] * (a[j] - a[j - 1])
+    l, mu, z = np.ones(N + 1), np.zeros(N + 1), np.zeros(N + 1)   # PASOS 3 y 5
+    for j in range(1, N):                                        # PASO 4
+        l[j] = 2.0 * (x[j + 1] - x[j - 1]) - h[j - 1] * mu[j - 1]
+        mu[j] = h[j] / l[j]
+        z[j] = (alfa[j] - h[j - 1] * z[j - 1]) / l[j]
+    c, b, d = np.zeros(N + 1), np.zeros(N), np.zeros(N)
+    for i in range(N - 1, -1, -1):                               # PASO 6
+        c[i] = z[i] - mu[i] * c[i + 1]
+        b[i] = (a[i + 1] - a[i]) / h[i] - h[i] * (c[i + 1] + 2.0 * c[i]) / 3.0
+        d[i] = (c[i + 1] - c[i]) / (3.0 * h[i])
+    return a[:-1], b, c[:-1], d
+
+
+def evaluar_trazadora(coefs, x_nodos, xv, derivada=0):
+    """PASO 7: evalúa el tramo que contiene a xv (o su primera / segunda derivada)."""
+    a, b, c, d = coefs
+    i = int(np.clip(np.searchsorted(x_nodos, xv, side='right') - 1, 0, len(a) - 1))
+    dx = xv - x_nodos[i]
+    if derivada == 0:
+        return a[i] + b[i] * dx + c[i] * dx ** 2 + d[i] * dx ** 3
+    if derivada == 1:
+        return b[i] + 2.0 * c[i] * dx + 3.0 * d[i] * dx ** 2
+    return 2.0 * c[i] + 6.0 * d[i] * dx
+
+
 def biseccion(f, izquierda, derecha, detalle=False):
     """Bisección escrita a mano; requiere un intervalo con cambio de signo."""
     if f(izquierda) == 0:
@@ -80,7 +142,7 @@ def biseccion(f, izquierda, derecha, detalle=False):
         xr = (izquierda + derecha) / 2.0
         fa, fxr = f(izquierda), f(xr)
         ea = error_porcentual(xr, anterior) if anterior is not None else 100.0
-        registros.append((it, ea))
+        registros.append((it, ea, izquierda, derecha, xr, fa, fxr))
         if detalle:
             print(f"{it:^6d}|{izquierda:^10.5f}|{derecha:^10.5f}|{xr:^12.6f}|{fa:^10.4f}|{fxr:^10.4f}|{ea:^12.6f}")
         if fxr == 0 or ea < TOLERANCIA:
@@ -110,7 +172,7 @@ def newton_raphson(f, df, inicial, limite, detalle=False):
         if not np.isfinite(siguiente) or not 0 <= siguiente <= limite:
             break
         ea = error_porcentual(siguiente, x)
-        registros.append((it, ea))
+        registros.append((it, ea, x, fx, dfx, siguiente))
         if detalle:
             print(f"{it:^6d}|{x:^12.6f}|{fx:^12.6f}|{dfx:^14.6f}|{siguiente:^12.6f}|{ea:^12.6f}")
         x = siguiente
@@ -151,7 +213,9 @@ def analizar_cancion(nombre, ruta_csv, meta=100.0, detalle=False):
         raise ValueError("Se necesitan al menos 5 semanas para la cúbica y su Sy/x.")
     t = np.arange(n, dtype=float)
     acumulado = np.cumsum(streams)
-    coeficientes = np.polyfit(t, acumulado, 3)
+    # Ecuaciones normales por eliminación gaussiana; vienen como [d, c, b, a]
+    ascendentes, matriz_normal, vector_normal = regresion_polinomica(t, acumulado, 3)
+    coeficientes = ascendentes[::-1]
     a, b, c, d = coeficientes
     modelo = np.poly1d(coeficientes)
     derivada = modelo.deriv()
@@ -159,6 +223,12 @@ def analizar_cancion(nombre, ruta_csv, meta=100.0, detalle=False):
     st = np.sum((acumulado - np.mean(acumulado)) ** 2)
     r2 = 1.0 - sr / st if st > 0 else float("nan")
     syx = np.sqrt(sr / (n - 4))
+    # Un acumulado nunca decrece: el modelo solo es físicamente válido si S'(t) > 0
+    modelo_creciente = bool(np.all(derivada(np.linspace(0, n - 1, 20 * n)) > 0))
+    trazadora = trazadora_cubica_natural(t, acumulado)
+    # Cuántas veces cambia de signo S'' en los datos: mide cuánto ruido tiene la serie
+    segundas = acumulado[2:] - 2.0 * acumulado[1:-1] + acumulado[:-2]
+    cambios_signo_d2 = int(np.sum(segundas[:-1] * segundas[1:] < 0))
     adelante, atras, centrada = diferencias_finitas(acumulado)
     # Pico real: la semana con más streams (equivale a la diferencia hacia atrás de S)
     semana_pico_datos = int(np.argmax(streams))
@@ -180,6 +250,12 @@ def analizar_cancion(nombre, ruta_csv, meta=100.0, detalle=False):
         "valor_pico_datos": float(streams[semana_pico_datos]),
         "adelante": adelante, "atras": atras, "centrada": centrada,
         "diagnostico": "aplica" if pico_valido else "no aplica",
+        "matriz_normal": matriz_normal, "vector_normal": vector_normal,
+        "modelo_creciente": modelo_creciente, "trazadora": trazadora,
+        "segundas": segundas, "cambios_signo_d2": cambios_signo_d2,
+        "raiz_traz_biseccion": None, "iteraciones_traz_biseccion": 0, "registros_traz_biseccion": [],
+        "raiz_traz_newton": None, "iteraciones_traz_newton": 0, "registros_traz_newton": [],
+        "fecha_hito_trazadora": None, "dt_semanas": None, "dif_modelo_trazadora": None,
     }
     if detalle:
         imprimir_datos_y_regresion(resultado)
@@ -230,11 +306,38 @@ def analizar_cancion(nombre, ruta_csv, meta=100.0, detalle=False):
                 print(f"{nombre}: algún método no convergió; su raíz queda sin resultado.")
             if raiz_newton is not None:
                 resultado["fecha_hito"] = (date.fromisoformat(fechas[0]) + timedelta(days=float(raiz_newton) * 7)).isoformat()
+                # Incertidumbre que el error del ajuste traslada al tiempo: dt = Sy/x / S'(t*)
+                resultado["dt_semanas"] = float(syx / derivada(raiz_newton))
+
+        # Contraste con la trazadora: pasa por los datos, así que su raíz queda en [k-1, k]
+        f_traz = lambda x: evaluar_trazadora(trazadora, t, x) - meta
+        df_traz = lambda x: evaluar_trazadora(trazadora, t, x, derivada=1)
         if detalle:
-            print(f"\nControl con interpolación lineal entre las semanas {k-1} y {k}: t = {resultado['t_lineal']:.4f} semanas")
+            print(f"\n3.3 TRAZADORA CÚBICA NATURAL. Bisección en [{t[k-1]:.0f}, {t[k]:.0f}]")
+        raiz_tb, it_tb, registros_tb = biseccion(f_traz, t[k - 1], t[k], detalle)
+        if detalle:
+            print(f"\nNewton-Raphson sobre la trazadora, t0 = {t[k-1]:.0f}")
+        raiz_tn, it_tn, registros_tn = newton_raphson(f_traz, df_traz, t[k - 1], n - 1, detalle)
+        resultado.update(raiz_traz_biseccion=raiz_tb, iteraciones_traz_biseccion=it_tb,
+                         registros_traz_biseccion=registros_tb, raiz_traz_newton=raiz_tn,
+                         iteraciones_traz_newton=it_tn, registros_traz_newton=registros_tn)
+        if raiz_tn is not None:
+            resultado["fecha_hito_trazadora"] = (date.fromisoformat(fechas[0]) + timedelta(days=float(raiz_tn) * 7)).isoformat()
             if resultado["raiz_newton"] is not None:
+                resultado["dif_modelo_trazadora"] = float(resultado["raiz_newton"] - raiz_tn)
+        if detalle:
+            if raiz_tn is not None:
+                print(f">> Trazadora: t* = {raiz_tn:.6f} semanas (bisección {it_tb} it., Newton {it_tn} it.)")
+            print(f"\nControl con interpolación lineal entre las semanas {k-1} y {k}: t = {resultado['t_lineal']:.4f} semanas")
+            if resultado["raiz_newton"] is not None and resultado["dif_modelo_trazadora"] is not None:
                 print(f"Diferencia modelo - interpolación: {(resultado['raiz_newton'] - resultado['t_lineal'])*7:.2f} días "
                       f"(error típico del ajuste: ±{syx:.2f} M streams)")
+                dt = resultado["dt_semanas"]
+                dif = resultado["dif_modelo_trazadora"]
+                print(f"Incertidumbre del modelo: dt = Sy/x / S'(t*) = {syx:.4f} / {derivada(resultado['raiz_newton']):.4f} "
+                      f"= {dt:.4f} semanas = ±{dt*7:.2f} días")
+                print(f"Diferencia modelo - trazadora: {dif*7:.2f} días "
+                      f"({'dentro' if abs(dif) <= dt else 'fuera'} de la incertidumbre del modelo)")
     if detalle:
         imprimir_diferencias(resultado)
     if not pico_valido:
@@ -265,9 +368,15 @@ def imprimir_datos_y_regresion(r):
     print("\n" + "=" * 80)
     print("2. REGRESIÓN POLINÓMICA CÚBICA (MÍNIMOS CUADRADOS):")
     print("=" * 80)
+    print("Sistema de ecuaciones normales [A | b] (incógnitas d, c, b, a), resuelto por eliminación gaussiana:")
+    for j in range(4):
+        fila = "".join(f"{r['matriz_normal'][j, k]:>16.0f}" for k in range(4))
+        print(f"{fila}  | {r['vector_normal'][j]:>16.3f}")
     print(f"Modelo: S(t) = ({a:.6f})*t^3 + ({b:.6f})*t^2 + ({c:.6f})*t + ({d:.6f})")
     print(f"Sr = {r['sr']:.4f}   St = {r['st']:.4f}")
     print(f"R^2 = {r['r2']:.6f} ({r['r2']*100:.2f}%)   Sy/x = {r['syx']:.4f} M streams")
+    print(f"Validez física: S'(t) > 0 en todo el período -> {'sí' if r['modelo_creciente'] else 'NO'}; "
+          f"S(0) modelo = {r['modelo'](0):.3f} M frente a {r['acumulado'][0]:.3f} M medido")
 
 
 def imprimir_diferencias(r):
@@ -306,8 +415,13 @@ def graficar_rosa_pastel(r):
     plt.figure(figsize=(10, 6), dpi=200)
     plt.scatter(t, S_accum, color='#e91e63', s=30, zorder=5, label='Datos reales acumulados (Spotify México)')
     plt.plot(t_dense, poly(t_dense), color='#2c3e50', linewidth=2.2, label=f'Ajuste cúbico ($R^2 = {r2:.4f}$)')
+    traz_dense = [evaluar_trazadora(r["trazadora"], t, x) for x in t_dense]
+    plt.plot(t_dense, traz_dense, color='#16a085', linewidth=1.6, linestyle='-.', label='Trazadora cúbica natural (pasa por los datos)')
     plt.axhline(TARGET, color='#d32f2f', linestyle='--', linewidth=1.3, label='100 millones de streams')
-    plt.axvline(root_newton, color='#27ae60', linestyle=':', linewidth=2, label=f'Raíz $t^* = {root_newton:.2f}$ semanas')
+    plt.axvline(root_newton, color='#f39c12', linestyle=':', linewidth=2, label=f'Raíz regresión $t^* = {root_newton:.2f}$ semanas')
+    if r["raiz_traz_newton"] is not None:
+        plt.axvline(r["raiz_traz_newton"], color='#16a085', linestyle=':', linewidth=2,
+                    label=f"Raíz trazadora $t^* = {r['raiz_traz_newton']:.2f}$ semanas")
     plt.title("'Rosa Pastel' (Belanova) en Spotify México, 2023\nStreams acumulados y ajuste por mínimos cuadrados", fontsize=13, fontweight='bold')
     plt.xlabel("Semanas desde el 26/01/2023")
     plt.ylabel("Streams acumulados (millones)")
@@ -355,6 +469,10 @@ def fila_comparativa(r):
         "Sy/x M": f"{r['syx']:.4f}",
         "Hito 100 M (semana Newton)": f"{hito:.6f}" if hito is not None else "sin resultado",
         "Iter. bisección": r["iteraciones_biseccion"], "Iter. Newton": r["iteraciones_newton"],
+        "Hito trazadora (semana)": f"{r['raiz_traz_newton']:.6f}" if r["raiz_traz_newton"] is not None else "sin resultado",
+        "Interpolación lineal (semana)": f"{r['t_lineal']:.4f}" if r["t_lineal"] is not None else "sin resultado",
+        "Incertidumbre modelo (días)": f"{r['dt_semanas'] * 7:.2f}" if r["dt_semanas"] is not None else "sin resultado",
+        "Modelo - trazadora (días)": f"{r['dif_modelo_trazadora'] * 7:.2f}" if r["dif_modelo_trazadora"] is not None else "sin resultado",
         "Pico modelo (semana)": f"{r['t_pico_modelo']:.2f}" if r["pico_valido"] else "no detecta",
         "Pico datos (semana)": r["semana_pico_datos"],
         "Pico datos (M/semana)": f"{r['valor_pico_datos']:.3f}",
