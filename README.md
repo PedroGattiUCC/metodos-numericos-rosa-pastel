@@ -18,6 +18,8 @@ Proyecto integrador de la cátedra **Métodos Numéricos** — **Universidad Cat
 
 Modelar numéricamente el fenómeno viral y resurgimiento de la canción *"Rosa Pastel"* del grupo mexicano **Belanova** en **Spotify México** durante 2023, a partir del auge generado por tendencias en TikTok.
 
+El problema se plantea como un **pronóstico de demanda de un servicio informático**: los resultados se traducen a ancho de banda, volumen de datos transferidos y ventana en la que la demanda supera una capacidad dada, magnitudes con las que se dimensiona la infraestructura de distribución.
+
 A través de herramientas numéricas fundamentales, el trabajo aborda tres interrogantes clave:
 1. **Modelado continuo:** ¿Cómo representar matemáticamente la trayectoria de reproducciones acumuladas a partir de datos discretos semanales?
 2. **Cálculo de hitos:** ¿En qué momento exacto se superó la barrera histórica de los **100 millones de reproducciones**?
@@ -51,6 +53,12 @@ Resolución de $f(t) = S(t) - 100 = 0$ con una tolerancia de convergencia de $\v
   - **Diferencia finita centrada:** $O(h^2)$
 - Determinación analítica y numérica del pico de viralidad mediante la anulación de la segunda derivada ($S''(t) = 0$).
 
+### 5. Aplicación de Ingeniería: Dimensionamiento de la Demanda
+- **Capacidad (ancho de banda):** se obtiene de la **tasa** $S'(t)$. Una tasa de $r$ millones de reproducciones por semana equivale a $B = r \cdot 10^6 \cdot b \cdot d / (1000 \cdot 604800)$ Mbps, con tasa de bits $b$ (kbit/s) y duración $d$ (s).
+- **Volumen transferido:** se obtiene del **acumulado** $S(t)$; define los costos de red.
+- **Ventana de saturación:** "¿cuándo la demanda supera la capacidad $C$?" se resuelve sobre la tasa, con Bisección y Newton-Raphson aplicados a $g(t) = S'(t) - C$, con $g'(t) = S''(t)$.
+- **Supuestos** (en `CODIGO/analisis_resurgimiento_rosa_pastel.py`): duración de 3:06, tasas de bits de 96, 160 y 320 kbit/s (referencia 160), hora pico igual a 2 veces el promedio semanal y sin descontar las reproducciones guardadas en el dispositivo. Los resultados son órdenes de magnitud, no datos de Spotify.
+
 ---
 
 ## 📊 Resultados Principales
@@ -62,6 +70,7 @@ Resolución de $f(t) = S(t) - 100 = 0$ con una tolerancia de convergencia de $\v
   - **Trazadora cúbica natural:** $t^* \approx 35.124\text{ semanas}$ (≈ 29/09/2023), igual a la interpolación lineal de control ($35.127$).
   - **Precisión:** la regresión se aparta 2.77 días de la trazadora, más que su incertidumbre $\Delta t \approx \pm 1.92$ días, por lo que se adopta el resultado de la trazadora.
 - **Pico del ritmo de viralidad:** semana 26 (fines de julio de 2023), alcanzando una tasa de $4.171\text{ millones de streams/semana}$ en los datos ($t \approx 30.59\text{ semanas}$ según el modelo cúbico).
+- **Dimensionamiento (160 kbit/s):** el pico medido equivale a unos **205 Mbps** de promedio semanal (≈ 410 Mbps en hora pico); el modelo da 169 Mbps, un 18 % menos, por lo que la capacidad debe dimensionarse con el pico medido. El hito de 100 M equivale a unos **372 TB** transferidos. Con una capacidad de ejemplo de 150 Mbps, el modelo la supera entre las semanas 18.18 y 42.99 (del 2/06 al 23/11/2023).
 
 ---
 
@@ -111,7 +120,8 @@ Para incorporar y procesar una nueva canción con el método generalizado:
 │   ├── grafico_1_ajuste_curva_streams.png              # Ajuste cúbico, trazadora y corte en 100M
 │   ├── grafico_2_convergencia_biseccion_vs_newton.png  # Comparativa de convergencia (escala log)
 │   ├── grafico_3_derivada_tasa_viralidad.png           # Diferenciación numérica y pico de viralidad
-│   └── grafico_4_comparacion_canciones.png             # Derivadas y picos de las tres canciones
+│   ├── grafico_4_comparacion_canciones.png             # Derivadas y picos de las tres canciones
+│   └── grafico_5_dimensionamiento.png                  # Ancho de banda medido y modelado, capacidad de ejemplo
 ├── requirements.txt                                    # Dependencias del entorno Python
 └── README.md                                           # Documentación general
 ```
@@ -152,4 +162,7 @@ Para ejecutar el código de simulación y reproducir los resultados:
   - Track *Rosa Pastel* de Belanova: [kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html](https://kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html)
   - Track *Ella Baila Sola* de Eslabón Armado y Peso Pluma: [kworb.net/spotify/track/3qQbCzHBycnDpGskqOWY0E.html](https://kworb.net/spotify/track/3qQbCzHBycnDpGskqOWY0E.html)
   - Track *Tití Me Preguntó* de Bad Bunny: [kworb.net/spotify/track/1IHWl5LamUGEuP4ozKQSXZ.html](https://kworb.net/spotify/track/1IHWl5LamUGEuP4ozKQSXZ.html)
+- **Supuestos del dimensionamiento:**
+  - Tasas de bits de Spotify: [support.spotify.com/us/article/audio-quality](https://support.spotify.com/us/article/audio-quality/)
+  - Duración de *Rosa Pastel* (3:06): listado del álbum en [es.wikipedia.org/wiki/Dulce_Beat](https://es.wikipedia.org/wiki/Dulce_Beat)
 - **Bibliografía:** Chapra, S. C., & Canale, R. P. *Métodos Numéricos para Ingenieros*. McGraw-Hill.

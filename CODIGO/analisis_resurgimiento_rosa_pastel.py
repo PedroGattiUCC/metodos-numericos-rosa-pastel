@@ -14,6 +14,8 @@ Métodos usados:
   3. Bisección y Newton-Raphson -> semana en que S(t) = 100 millones
      (sobre la regresión y sobre la trazadora, con interpolación lineal de control)
   4. Diferenciación numérica (adelante, atrás, centrada) -> ritmo de streams y pico
+  5. Aplicación de ingeniería: ancho de banda, volumen transferido y ventana en la
+     que la demanda S'(t) supera una capacidad C (Bisección y Newton sobre S'(t) - C)
 """
 
 import csv
@@ -34,6 +36,15 @@ CARPETA = os.path.dirname(os.path.abspath(__file__))
 # Los gráficos van a la carpeta GRAFICOS/ de la raíz del repositorio
 GRAFICOS = os.path.normpath(os.path.join(CARPETA, os.pardir, "GRAFICOS"))
 TOLERANCIA = 1e-4  # error relativo porcentual, igual al trabajo original
+
+# Supuestos del dimensionamiento (ver informe, sección de aplicación de ingeniería).
+# Son supuestos de planificación, no datos de Spotify.
+DURACION_S = 186                 # "Rosa Pastel": 3:06 según el listado del álbum Dulce Beat
+BITRATES_KBPS = (96, 160, 320)   # calidad baja, la de referencia y la máxima de Spotify
+BITRATE_REF_KBPS = 160
+FACTOR_HORA_PICO = 2.0           # cuántas veces supera la hora pico al promedio semanal
+CAPACIDAD_MBPS = 150.0           # capacidad de ejemplo reservada para la canción
+SEGUNDOS_SEMANA = 7 * 24 * 3600
 
 
 def cargar_csv(ruta):
@@ -516,6 +527,116 @@ def graficar_comparacion(resultados):
     plt.close(fig)
 
 
+def megabits_por_reproduccion(kbps, duracion_s=DURACION_S):
+    """Tamaño de una reproducción completa en megabits."""
+    return kbps * duracion_s / 1000.0
+
+
+def mbps(streams_millones_semana, kbps, duracion_s=DURACION_S):
+    """Ancho de banda promedio de una semana (Mbps) para cierta cantidad de reproducciones."""
+    return streams_millones_semana * 1e6 * megabits_por_reproduccion(kbps, duracion_s) / SEGUNDOS_SEMANA
+
+
+def streams_para_mbps(capacidad_mbps, kbps, duracion_s=DURACION_S):
+    """Reproducciones por semana (en millones) que ocupan exactamente esa capacidad."""
+    return capacidad_mbps * SEGUNDOS_SEMANA / megabits_por_reproduccion(kbps, duracion_s) / 1e6
+
+
+def dimensionamiento(r, capacidad_mbps=CAPACIDAD_MBPS, detalle=False):
+    """Traduce los resultados a magnitudes de ingeniería.
+
+    - La tasa S'(t) dimensiona la capacidad (ancho de banda).
+    - El acumulado S(t) dimensiona el volumen total transferido.
+    - La ventana en que la demanda supera la capacidad C son las raíces de
+      g(t) = S'(t) - C, con g'(t) = S''(t) = 6at + 2b.
+    """
+    derivada, segunda = r["derivada"], r["derivada"].deriv()
+    n, streams = r["n"], r["streams"]
+    c_streams = streams_para_mbps(capacidad_mbps, BITRATE_REF_KBPS)
+    g = lambda x: derivada(x) - c_streams
+    dg = lambda x: segunda(x)
+
+    # La parábola S'(t) tiene su máximo en t_pico: hay una raíz a cada lado si lo supera
+    raices = []
+    if r["pico_valido"] and derivada(r["t_pico_modelo"]) > c_streams:
+        for a0, b0 in ((0.0, r["t_pico_modelo"]), (r["t_pico_modelo"], float(n - 1))):
+            if g(a0) * g(b0) < 0:
+                rb, ib, reg_b = biseccion(g, a0, b0)
+                # Newton arranca en el extremo alejado del pico, donde S''(t) no se anula
+                t0 = a0 if a0 == 0.0 else b0
+                rn, inn, reg_n = newton_raphson(g, dg, t0, n - 1)
+                raices.append({"intervalo": (a0, b0), "biseccion": rb, "it_biseccion": ib, "reg_biseccion": reg_b,
+                               "newton": rn, "it_newton": inn, "reg_newton": reg_n, "t0": t0})
+    semanas_sobre = [i for i in range(n) if streams[i] > c_streams]
+    i_pico = r["semana_pico_datos"]
+    resultado = {
+        "capacidad_mbps": capacidad_mbps, "capacidad_streams": c_streams, "raices": raices,
+        "semanas_sobre_capacidad": semanas_sobre,
+        "mb_por_reproduccion": {k: megabits_por_reproduccion(k) / 8 for k in BITRATES_KBPS},
+        "pico_datos_mbps": {k: mbps(streams[i_pico], k) for k in BITRATES_KBPS},
+        "pico_modelo_mbps": {k: mbps(r["ritmo_pico_modelo"], k) for k in BITRATES_KBPS} if r["pico_valido"] else None,
+        # Volumen: millones de reproducciones x megabits / 8 = MB; / 1e6 -> TB
+        "volumen_hito_tb": {k: r["meta"] * 1e6 * megabits_por_reproduccion(k) / 8 / 1e6 for k in BITRATES_KBPS},
+        "volumen_total_tb": {k: r["total_millones"] * 1e6 * megabits_por_reproduccion(k) / 8 / 1e6 for k in BITRATES_KBPS},
+    }
+    if detalle:
+        imprimir_dimensionamiento(r, resultado)
+    return resultado
+
+
+def imprimir_dimensionamiento(r, d):
+    print("\n" + "=" * 80)
+    print("6. APLICACIÓN DE INGENIERÍA: DIMENSIONAMIENTO DE LA DEMANDA")
+    print("=" * 80)
+    print(f"Supuestos: duración {DURACION_S} s, bitrate {'/'.join(str(k) for k in BITRATES_KBPS)} kbps "
+          f"(referencia {BITRATE_REF_KBPS}), hora pico = {FACTOR_HORA_PICO:g} x promedio semanal.")
+    print("Cota superior: no descuenta las reproducciones guardadas en el dispositivo.")
+    print(f"{'Bitrate':^10}|{'MB/reprod.':^12}|{'Pico datos (Mbps)':^19}|{'Pico modelo (Mbps)':^20}|"
+          f"{'Hora pico datos':^17}|{'Vol. 100 M (TB)':^17}|{'Vol. total (TB)':^17}")
+    print("-" * 118)
+    for k in BITRATES_KBPS:
+        modelo = d["pico_modelo_mbps"][k] if d["pico_modelo_mbps"] else float("nan")
+        print(f"{k:^10d}|{d['mb_por_reproduccion'][k]:^12.2f}|{d['pico_datos_mbps'][k]:^19.1f}|{modelo:^20.1f}|"
+              f"{d['pico_datos_mbps'][k] * FACTOR_HORA_PICO:^17.1f}|{d['volumen_hito_tb'][k]:^17.1f}|"
+              f"{d['volumen_total_tb'][k]:^17.1f}")
+    print(f"\nCapacidad de ejemplo C = {d['capacidad_mbps']:g} Mbps = {d['capacidad_streams']:.4f} M reproducciones/semana "
+          f"a {BITRATE_REF_KBPS} kbps")
+    for raiz in d["raices"]:
+        print(f"  g(t) = S'(t) - C en [{raiz['intervalo'][0]:.2f}, {raiz['intervalo'][1]:.2f}]: "
+              f"Bisección t = {raiz['biseccion']:.6f} ({raiz['it_biseccion']} it.), "
+              f"Newton (t0 = {raiz['t0']:.2f}) t = {raiz['newton']:.6f} ({raiz['it_newton']} it.)")
+    sobre = d["semanas_sobre_capacidad"]
+    if sobre:
+        print(f"  Datos: {len(sobre)} semanas superan C (de la {sobre[0]} a la {sobre[-1]}).")
+
+
+def graficar_dimensionamiento(r, d):
+    """Ancho de banda semanal medido, el del modelo y la capacidad de ejemplo."""
+    t, n = r["t"], r["n"]
+    t_dense = np.linspace(0, n - 1, 300)
+    a_mbps = lambda s: mbps(s, BITRATE_REF_KBPS)
+    plt.figure(figsize=(10, 6), dpi=200)
+    plt.bar(t, a_mbps(r["streams"]), width=0.7, color='#9b59b6', alpha=0.45,
+            label=f'Ancho de banda medido (promedio semanal, {BITRATE_REF_KBPS} kbps)')
+    plt.plot(t_dense, a_mbps(r["derivada"](t_dense)), color='#8e44ad', linewidth=2.2, label="Modelo: S'(t) en Mbps")
+    plt.axhline(d["capacidad_mbps"], color='#d32f2f', linestyle='--', linewidth=1.5,
+                label=f"Capacidad de ejemplo C = {d['capacidad_mbps']:g} Mbps")
+    if len(d["raices"]) == 2:
+        t1, t2 = d["raices"][0]["newton"], d["raices"][1]["newton"]
+        plt.axvspan(t1, t2, color='#d32f2f', alpha=0.07, label=f"Modelo sobre C: semanas {t1:.1f} a {t2:.1f}")
+    i = r["semana_pico_datos"]
+    plt.scatter([i], [a_mbps(r["streams"][i])], color='#e67e22', marker='D', s=45, zorder=5,
+                label=f"Pico medido: {a_mbps(r['streams'][i]):.0f} Mbps (semana {i})")
+    plt.title("'Rosa Pastel': demanda de ancho de banda en Spotify México", fontsize=13, fontweight='bold')
+    plt.xlabel("Semanas desde el 26/01/2023")
+    plt.ylabel("Mbps (promedio semanal)")
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.legend(loc='upper left', fontsize=9)
+    plt.tight_layout()
+    plt.savefig(os.path.join(GRAFICOS, "grafico_5_dimensionamiento.png"))
+    plt.close()
+
+
 def main():
     os.makedirs(GRAFICOS, exist_ok=True)
     resultados = []
@@ -524,9 +645,11 @@ def main():
         resultados.append(resultado)
         if i == 0:
             graficar_rosa_pastel(resultado)
+            # La duración del supuesto corresponde a esta canción
+            graficar_dimensionamiento(resultado, dimensionamiento(resultado, detalle=True))
     guardar_comparacion(resultados)
     graficar_comparacion(resultados)
-    print("\n[OK] Cuatro gráficos guardados en GRAFICOS/ y comparacion_canciones.csv en CODIGO/.")
+    print("\n[OK] Cinco gráficos guardados en GRAFICOS/ y comparacion_canciones.csv en CODIGO/.")
 
 
 if __name__ == '__main__':
