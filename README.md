@@ -1,177 +1,52 @@
-# Modelado Numérico del Resurgimiento de 'Rosa Pastel' (Belanova)
+# Modelado numérico del resurgimiento de "Rosa Pastel" (Belanova)
 
-Proyecto integrador de la cátedra **Métodos Numéricos** — **Universidad Católica de Córdoba (UCC)**.  
-**Comisión:** 46324 — **Ciclo Lectivo:** 2026-2  
-**Docente:** Ing. Carlos Arnaudo  
+Proyecto integrador de **Taller de Métodos Numéricos**, Universidad Católica de Córdoba.
+Docente: Ing. Carlos Arnaudo · Comisión 46324 · 2026-2.
+Integrantes: Pedro Gatti, Facundo Grillo y Gonzalo Marin.
 
----
+## Objetivo
+En 2023 "Rosa Pastel" (2006) volvió a ser viral por un trend de TikTok. Con 47 semanas reales de reproducciones en Spotify México se estima **cuándo la canción superó los 100 millones de reproducciones** y **qué ancho de banda exigió su semana pico**. Es un problema de pronóstico de demanda para dimensionar la red de un servicio de streaming.
 
-## 👥 Integrantes del Equipo
+## Métodos
+Solo métodos vistos en la materia:
+1. **Interpolación polinomial de Newton** (diferencias divididas) con los 4 datos semanales que rodean los 100 M → polinomio P(t) de grado 3.
+2. **Bisección y Newton-Raphson** para la raíz de f(t) = P(t) − 100, con tolerancia |Ea| < 10⁻⁴ %, y comparación de los dos métodos.
 
-- **Pedro Gatti** ([@PedroGattiUCC](https://github.com/PedroGattiUCC))
-- **Facundo Grillo**
-- **Gonzalo Marin**
+## Aplicación de ingeniería
+Ancho de banda (Mbps) = reproducciones por semana × 160 kbps × 186 s ÷ 1000 ÷ 604 800 s.
+Supuestos: duración de 3:06 ([Dulce Beat, Wikipedia](https://es.wikipedia.org/wiki/Dulce_Beat)) y calidad de 160 kbps ([Spotify, calidad de audio](https://support.spotify.com/us/article/audio-quality/)). Son órdenes de magnitud, no datos de Spotify.
 
----
+## Resultados (Rosa Pastel)
+- Los datos muestran que el acumulado pasa de 99,60 M (semana 35) a 102,74 M (semana 36).
+- Interpolación con las semanas 34 a 37: P(t) = 96,349 + 3,25351(t−34) − 0,05879(t−34)(t−35) − 0,009340(t−34)(t−35)(t−36).
+- Hito de 100 M: t* = 35,12 semanas (≈ 28/09/2023). Bisección: 15 iteraciones. Newton-Raphson: 3.
+- Semana pico: 26 (27/07/2023), con 4,17 M de reproducciones ≈ **205 Mbps** de promedio.
 
-## 🎯 Objetivo del Proyecto
+## El mismo método en otras canciones
+| Canción | Semanas | Datos usados | Hito 100 M | Iter. bisección / Newton |
+|---|---|---|---|---|
+| Rosa Pastel (Belanova) | 47 | 34 a 37 | 28/09/2023 | 15 / 3 |
+| Ella Baila Sola (Eslabón Armado y Peso Pluma) | 52 | 2 a 5 | 19/04/2023 | 18 / 4 |
+| Tití Me Preguntó (Bad Bunny) | 52 | 9 a 12 | 21/07/2022 | 17 / 3 |
 
-Modelar numéricamente el fenómeno viral y resurgimiento de la canción *"Rosa Pastel"* del grupo mexicano **Belanova** en **Spotify México** durante 2023, a partir del auge generado por tendencias en TikTok.
+Para analizar otra canción:
+1. Bajar su historial semanal de [kworb.net](https://kworb.net/spotify/).
+2. Guardarlo en `CODIGO/datos/` con las columnas `fecha,streams`.
+3. Agregar una línea a `CANCIONES` en el script.
 
-El problema se plantea como un **pronóstico de demanda de un servicio informático**: los resultados se traducen a ancho de banda, volumen de datos transferidos y ventana en la que la demanda supera una capacidad dada, magnitudes con las que se dimensiona la infraestructura de distribución.
+Si se quiere otra meta, se cambia `META`. Para el ancho de banda de otra canción, se cambia `DURACION_S`.
 
-A través de herramientas numéricas fundamentales, el trabajo aborda tres interrogantes clave:
-1. **Modelado continuo:** ¿Cómo representar matemáticamente la trayectoria de reproducciones acumuladas a partir de datos discretos semanales?
-2. **Cálculo de hitos:** ¿En qué momento exacto se superó la barrera histórica de los **100 millones de reproducciones**?
-3. **Dinámica y pico viral:** ¿Cuál fue el ritmo instantáneo de reproducciones y en qué semana se alcanzó la tasa máxima de viralidad?
-
----
-
-## 🔬 Métodos Numéricos Implementados
-
-### 1. Ajuste de Curvas por Mínimos Cuadrados (Regresión Polinómica Cúbica)
-- **Modelo:** $S(t) = a\,t^3 + b\,t^2 + c\,t + d$
-- Resolución del sistema de ecuaciones normales para minimizar la suma de cuadrados de los residuos ($S_r$), mediante **eliminación gaussiana** programada a mano (triangulación y sustitución hacia atrás).
-- Evaluación de bondad de ajuste mediante coeficiente de determinación ($R^2$) y error estándar de la estimación ($S_{y/x}$).
-- Control de validez física: el modelo debe ser creciente ($S'(t) > 0$) en todo el período.
-
-### 2. Trazadora Cúbica Natural
-- Modelo de contraste que pasa exactamente por todos los datos medidos (algoritmo de Burden-Faires, pasos 1 a 7).
-
-### 3. Búsqueda de Raíces de Ecuaciones No Lineales
-Resolución de $f(t) = S(t) - 100 = 0$ con una tolerancia de convergencia de $\varepsilon_a < 10^{-4}\,\%$, sobre la regresión y sobre la trazadora:
-- **Método de Bisección (Cerrado):** Búsqueda sistemática por intervalo con convergencia lineal garantizada.
-- **Método de Newton-Raphson (Abierto):** Método iterativo $t_{i+1} = t_i - \frac{f(t_i)}{f'(t_i)}$ con convergencia cuadrática.
-- **Control:** interpolación lineal entre las dos semanas que encierran el cruce.
-- **Precisión real:** incertidumbre que el ajuste traslada al tiempo, $\Delta t \approx S_{y/x} / S'(t^*)$.
-- Comparación cuantitativa de velocidad y número de iteraciones requeridas.
-
-### 4. Diferenciación Numérica
-- Estimación del ritmo semanal de streams $S'(t) \approx \frac{dS}{dt}$ utilizando fórmulas de diferencias finitas:
-  - **Diferencia finita hacia adelante:** $O(h)$
-  - **Diferencia finita hacia atrás:** $O(h)$
-  - **Diferencia finita centrada:** $O(h^2)$
-- Determinación analítica y numérica del pico de viralidad mediante la anulación de la segunda derivada ($S''(t) = 0$).
-
-### 5. Aplicación de Ingeniería: Dimensionamiento de la Demanda
-- **Capacidad (ancho de banda):** se obtiene de la **tasa** $S'(t)$. Una tasa de $r$ millones de reproducciones por semana equivale a $B = r \cdot 10^6 \cdot b \cdot d / (1000 \cdot 604800)$ Mbps, con tasa de bits $b$ (kbit/s) y duración $d$ (s).
-- **Volumen transferido:** se obtiene del **acumulado** $S(t)$; define los costos de red.
-- **Ventana de saturación:** "¿cuándo la demanda supera la capacidad $C$?" se resuelve sobre la tasa, con Bisección y Newton-Raphson aplicados a $g(t) = S'(t) - C$, con $g'(t) = S''(t)$.
-- **Supuestos** (en `CODIGO/analisis_resurgimiento_rosa_pastel.py`): duración de 3:06, tasas de bits de 96, 160 y 320 kbit/s (referencia 160), hora pico igual a 2 veces el promedio semanal y sin descontar las reproducciones guardadas en el dispositivo. Los resultados son órdenes de magnitud, no datos de Spotify.
-
----
-
-## 📊 Resultados Principales
-
-- **Bondad de ajuste:** $R^2 \approx 99.95\%$ ($S_{y/x} \approx 0.927\text{ M}$ streams).
-- **Hito de 100 Millones:**
-  - **Bisección:** alcanzó la raíz de la regresión en **15 iteraciones** ($t^* \approx 35.52\text{ semanas}$).
-  - **Newton-Raphson:** alcanzó la misma precisión en sólo **3 iteraciones**.
-  - **Trazadora cúbica natural:** $t^* \approx 35.124\text{ semanas}$ (≈ 29/09/2023), igual a la interpolación lineal de control ($35.127$).
-  - **Precisión:** la regresión se aparta 2.77 días de la trazadora, más que su incertidumbre $\Delta t \approx \pm 1.92$ días, por lo que se adopta el resultado de la trazadora.
-- **Pico del ritmo de viralidad:** semana 26 (fines de julio de 2023), alcanzando una tasa de $4.171\text{ millones de streams/semana}$ en los datos ($t \approx 30.59\text{ semanas}$ según el modelo cúbico).
-- **Dimensionamiento (160 kbit/s):** el pico medido equivale a unos **205 Mbps** de promedio semanal (≈ 410 Mbps en hora pico); el modelo da 169 Mbps, un 18 % menos, por lo que la capacidad debe dimensionarse con el pico medido. El hito de 100 M equivale a unos **372 TB** transferidos. Con una capacidad de ejemplo de 150 Mbps, el modelo la supera entre las semanas 18.18 y 42.99 (del 2/06 al 23/11/2023).
-
----
-
-## 🔄 Generalización a Otras Canciones
-
-A pedido de la cátedra para evaluar la aplicabilidad del método como herramienta general de ingeniería, el flujo se modularizó mediante la función `analizar_cancion(nombre, csv, meta)`. Se contrastó el resurgimiento gradual de *Rosa Pastel* frente a dos estrenos comerciales masivos:
-
-La derivada de una cúbica global, $S'(t)$, es una parábola simétrica alrededor de su vértice.
-En los estrenos, el pico temprano (semana 5–6) va seguido de una cola larga de caída lenta.
-Al ajustar toda la serie por mínimos cuadrados, esa cola domina y resulta $a > 0$: el vértice es un mínimo del ritmo.
-Para detectar el pico se ajusta la misma cúbica de $S(t)$ solo en $[m-6,m+6]$, recortada a $[0,n-1]$, donde $m$ es el máximo semanal medido.
-La función `pico_local` reutiliza las ecuaciones normales y la eliminación gaussiana, sin dependencias nuevas.
-El pico local es $t=-b/(3a)$, válido si $a<0$ y cae dentro de la ventana; su ritmo es $S'(t)$ en ese punto.
-La sensibilidad muestra las semanas del pico con $w=4,6,8$; las variaciones indican cuánto depende de la ventana elegida.
-Los tres casos dan un pico local válido; los cálculos globales, los hitos y el dimensionamiento de Rosa Pastel se conservan.
-
-| Canción | Semanas (desde) | Total M | R² | Sy/x M | Hito 100 M (semana, Newton) | Iter. bis./Newton | Pico modelo global | Pico datos | Pico local (semana) | Ritmo pico local (M/semana) | Sensibilidad w=4/6/8 | Diagnóstico |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Rosa Pastel (Belanova) | 47 (26/01/2023) | 132.9 | 0.999533 | 0.927 | 35.52 (≈1/10/2023) | 15 / 3 | semana 30.59 | semana 26, 4.171 M | 28.58 | 3.78 | 27.01/28.58/29.75 | global y local |
-| Ella Baila Sola (Eslabón Armado y Peso Pluma) | 52 (23/03/2023, estreno) | 409.6 | 0.996265 | 6.656 | 3.55 (≈16/04/2023) | 19 / 3 | no detecta (a = +0.005926) | semana 5, 26.140 M | 3.78 | 23.11 | 3.96/3.78/2.83 | solo local |
-| Tití Me Preguntó (Bad Bunny) | 52 (12/05/2022, estreno) | 298.3 | 0.999692 | 1.596 | 9.87 (≈20/07/2022) | 17 / 3 | no detecta (a = +0.000279) | semana 6, 9.860 M | 6.41 | 9.58 | 5.88/6.41/6.85 | solo local |
-
-### 🛠️ Cómo analizar otra canción
-
-Para incorporar y procesar una nueva canción con el método generalizado:
-
-1. **Descargar serie temporal:** Bajar el historial semanal de Spotify desde [Kworb.net](https://kworb.net/spotify/) para el país y canción deseada.
-2. **Crear archivo CSV en `CODIGO/datos/`:** Guardar el archivo en esa carpeta (ej. `CODIGO/datos/mi_cancion.csv`) con el formato estándar `fecha,streams` (fechas ISO `YYYY-MM-DD` separadas por 7 días y reproducciones semanales enteras).
-3. **Agregar la canción a la lista del script:** En `CODIGO/analisis_resurgimiento_rosa_pastel.py`, añadir una línea a la lista `CANCIONES` (las rutas son relativas a `CODIGO/`):
-   ```python
-   CANCIONES = [
-       ("Rosa Pastel (Belanova)", "datos/rosa_pastel_belanova.csv"),
-       # ...
-       ("Nombre Canción (Artista)", "datos/mi_cancion.csv"),
-   ]
-   ```
-4. **Ejecutar el script:** Al correr `python3 CODIGO/analisis_resurgimiento_rosa_pastel.py`, el sistema ajustará automáticamente las regresiones cúbicas global y local, resolverá el hito de streams (bisección y Newton-Raphson, sobre la regresión y la trazadora), calculará las diferencias finitas y la sensibilidad de la ventana local, validará los picos ($a < 0$ y dentro del intervalo ajustado) y actualizará `CODIGO/comparacion_canciones.csv` y los gráficos de `GRAFICOS/`.
-
----
-
-## 📁 Estructura del Repositorio
-
-```text
-├── CODIGO/
-│   ├── analisis_resurgimiento_rosa_pastel.py           # Script principal modularizado y generalizado
-│   ├── comparacion_canciones.csv                       # Tabla comparativa de resultados entre canciones
-│   └── datos/                                          # Series temporales semanales en formato CSV (kworb.net)
-│       ├── ella_baila_sola_eslabon_armado_peso_pluma.csv
-│       ├── rosa_pastel_belanova.csv
-│       └── titi_me_pregunto_bad_bunny.csv
-├── ENTREGABLES/
-│   ├── Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx  # Informe técnico completo del proyecto
-│   ├── Modelo_Numerico_Rosa_Pastel_Belanova.xlsx            # Planilla Excel con cálculos y tablas paso a paso
-│   └── Presentacion_Rosa_Pastel_Metodos_Numericos.pptx      # Presentación PowerPoint (14 diapositivas)
-├── GRAFICOS/                                           # Generados por el script
-│   ├── grafico_1_ajuste_curva_streams.png              # Ajuste cúbico, trazadora y corte en 100M
-│   ├── grafico_2_convergencia_biseccion_vs_newton.png  # Comparativa de convergencia (escala log)
-│   ├── grafico_3_derivada_tasa_viralidad.png           # Diferenciación numérica y pico de viralidad
-│   ├── grafico_4_comparacion_canciones.png             # Derivadas y picos de las tres canciones
-│   └── grafico_5_dimensionamiento.png                  # Ancho de banda medido y modelado, capacidad de ejemplo
-├── requirements.txt                                    # Dependencias del entorno Python
-└── README.md                                           # Documentación general
+## Cómo correrlo
+```bash
+pip install -r requirements.txt
+python3 CODIGO/analisis_resurgimiento_rosa_pastel.py
 ```
+Imprime las tablas, guarda los 3 gráficos en `GRAFICOS/` y la tabla `CODIGO/comparacion_canciones.csv`.
 
----
+## Archivos
+- `CODIGO/`: script y datos.
+- `GRAFICOS/`: interpolación, convergencia y comparación de canciones.
+- `ENTREGABLES/`: informe, presentación (Word, PowerPoint y PDF) y planilla de Excel (con fórmulas: datos, diferencias divididas, bisección y Newton).
 
-## 🚀 Requisitos e Instalación
-
-Para ejecutar el código de simulación y reproducir los resultados:
-
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/PedroGattiUCC/metodos-numericos-rosa-pastel.git
-   cd metodos-numericos-rosa-pastel
-   ```
-
-2. **Crear y activar un entorno virtual (opcional pero recomendado):**
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-
-3. **Instalar dependencias:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Ejecutar el análisis:**
-   ```bash
-   python3 CODIGO/analisis_resurgimiento_rosa_pastel.py
-   ```
-
----
-
-## 📚 Fuentes de Datos
-
-- **Spotify Charts México (Kworb.net):**
-  - Track *Rosa Pastel* de Belanova: [kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html](https://kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html)
-  - Track *Ella Baila Sola* de Eslabón Armado y Peso Pluma: [kworb.net/spotify/track/3qQbCzHBycnDpGskqOWY0E.html](https://kworb.net/spotify/track/3qQbCzHBycnDpGskqOWY0E.html)
-  - Track *Tití Me Preguntó* de Bad Bunny: [kworb.net/spotify/track/1IHWl5LamUGEuP4ozKQSXZ.html](https://kworb.net/spotify/track/1IHWl5LamUGEuP4ozKQSXZ.html)
-- **Supuestos del dimensionamiento:**
-  - Tasas de bits de Spotify: [support.spotify.com/us/article/audio-quality](https://support.spotify.com/us/article/audio-quality/)
-  - Duración de *Rosa Pastel* (3:06): listado del álbum en [es.wikipedia.org/wiki/Dulce_Beat](https://es.wikipedia.org/wiki/Dulce_Beat)
-- **Bibliografía:** Chapra, S. C., & Canale, R. P. *Métodos Numéricos para Ingenieros*. McGraw-Hill.
+## Fuentes de datos
+Historial de charts semanales de Spotify México en kworb.net: [Rosa Pastel](https://kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html) · [Ella Baila Sola](https://kworb.net/spotify/track/3qQbCzHBycnDpGskqOWY0E.html) · [Tití Me Preguntó](https://kworb.net/spotify/track/1IHWl5LamUGEuP4ozKQSXZ.html).
