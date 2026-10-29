@@ -21,6 +21,7 @@ from datetime import date, timedelta
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 
 
 # Para analizar otra canción alcanza con agregar una línea y su CSV en datos/
@@ -195,6 +196,14 @@ def imprimir_detalle(r):
     print(f"Ancho de banda promedio en esa semana: {r['mbps_pico']:.1f} Mbps")
 
 
+def coma(valor):
+    """Número con coma decimal, como en el informe."""
+    return f"{valor:g}".replace(".", ",")
+
+
+EJE_CON_COMA = FuncFormatter(lambda valor, _: coma(valor))
+
+
 def dibujar_hito(eje, r, zoom):
     """Datos acumulados, polinomio interpolante y el punto donde cruza la meta."""
     x = r["t"][r["puntos"]]
@@ -203,11 +212,13 @@ def dibujar_hito(eje, r, zoom):
     eje.plot(t_fino, r["P"](t_fino), color='#2c3e50', linewidth=2, label="Polinomio de Newton (4 datos)")
     eje.axhline(META, color='#c0392b', linestyle='--', linewidth=1.2, label="Meta: 100 M")
     eje.scatter([r["raiz_n"]], [META], color='#c0392b', s=55, zorder=5,
-                label=f"t* = {r['raiz_n']:.2f} sem ({r['fecha_hito']:%d/%m/%Y})")
+                label=f"t* = {r['raiz_n']:.2f} sem ({r['fecha_hito']:%d/%m/%Y})".replace(".", ","))
     if zoom:
         eje.set_xlim(x[0] - 0.5, x[-1] + 0.5)
         eje.set_ylim(r["S"][r["puntos"]].min() - 2, r["S"][r["puntos"]].max() + 2)
-    eje.set_xlabel(f"Semanas desde {r['fechas'][0]}")
+    eje.set_xlabel(f"Semanas desde el {date.fromisoformat(r['fechas'][0]):%d/%m/%Y}")
+    eje.xaxis.set_major_formatter(EJE_CON_COMA)
+    eje.yaxis.set_major_formatter(EJE_CON_COMA)
     eje.set_ylabel("Millones acumulados")
     eje.grid(True, linestyle='--', alpha=0.6)
 

@@ -29,7 +29,7 @@ La consigna pide **informe escrito** y **presentación oral (~15 min)**, subidos
 
 | Archivo | Qué es |
 |---|---|
-| `Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx` / `.pdf` | Informe (15 páginas) con la estructura de la consigna; la sección 3.1 justifica por qué elegimos estos métodos y no los otros de los apuntes |
+| `Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx` / `.pdf` | Informe (16 páginas) con la estructura de la consigna; la sección 3.1 justifica por qué elegimos estos métodos y no los otros de los apuntes |
 | `Presentacion_Rosa_Pastel_Metodos_Numericos.pptx` / `.pdf` | Presentación (14 diapositivas; la 5 justifica la elección de los métodos) |
 | `Modelo_Numerico_Rosa_Pastel_Belanova.xlsx` | Excel con **fórmulas**: datos, diferencias divididas, bisección y Newton |
 | `Codigo/` | Script de Python, datos (CSV), gráficos, `LEEME.txt` |
