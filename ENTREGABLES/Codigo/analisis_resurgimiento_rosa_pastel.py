@@ -30,7 +30,7 @@ CANCIONES = [
     ("Tití me preguntó (Bad Bunny)", "datos/titi_me_pregunto_bad_bunny.csv"),
 ]
 CARPETA = os.path.dirname(os.path.abspath(__file__))
-GRAFICOS = os.path.normpath(os.path.join(CARPETA, os.pardir, "GRAFICOS"))
+GRAFICOS = os.path.join(CARPETA, "graficos")
 META = 100.0          # millones de reproducciones acumuladas
 TOLERANCIA = 1e-4     # error relativo porcentual aproximado |Ea| (%)
 
@@ -274,7 +274,7 @@ def main():
     grafico_convergencia(resultados[0])
     grafico_canciones(resultados)
     tabla_comparativa(resultados)
-    print("\n[OK] Gráficos en GRAFICOS/ y tabla en CODIGO/comparacion_canciones.csv")
+    print("\n[OK] Gráficos en graficos/ y tabla en comparacion_canciones.csv")
 
 
 if __name__ == '__main__':

@@ -31,22 +31,25 @@ Supuestos: duración de 3:06 ([Dulce Beat, Wikipedia](https://es.wikipedia.org/w
 
 Para analizar otra canción:
 1. Bajar su historial semanal de [kworb.net](https://kworb.net/spotify/).
-2. Guardarlo en `CODIGO/datos/` con las columnas `fecha,streams`.
+2. Guardarlo en `ENTREGABLES/Codigo/datos/` con las columnas `fecha,streams`.
 3. Agregar una línea a `CANCIONES` en el script.
 
 Si se quiere otra meta, se cambia `META`. Para el ancho de banda de otra canción, se cambia `DURACION_S`.
 
 ## Cómo correrlo
 ```bash
-pip install -r requirements.txt
-python3 CODIGO/analisis_resurgimiento_rosa_pastel.py
+pip install -r ENTREGABLES/Codigo/requirements.txt
+python3 ENTREGABLES/Codigo/analisis_resurgimiento_rosa_pastel.py
 ```
-Imprime las tablas, guarda los 3 gráficos en `GRAFICOS/` y la tabla `CODIGO/comparacion_canciones.csv`.
+Imprime las tablas, guarda los 3 gráficos en `ENTREGABLES/Codigo/graficos/` y la tabla `ENTREGABLES/Codigo/comparacion_canciones.csv`.
 
 ## Archivos
-- `CODIGO/`: script y datos.
-- `GRAFICOS/`: interpolación, convergencia y comparación de canciones.
-- `ENTREGABLES/`: informe, presentación (Word, PowerPoint y PDF) y planilla de Excel (con fórmulas: datos, diferencias divididas, bisección y Newton).
+Todo lo que se entrega está en `ENTREGABLES/` (es la carpeta que se sube al Drive):
+- Informe (Word y PDF) y presentación (PowerPoint y PDF).
+- Planilla de Excel con fórmulas: datos, diferencias divididas, bisección y Newton-Raphson.
+- `Codigo/`: script de Python, datos (CSV), gráficos y `requirements.txt`.
+
+`GUIA_DEFENSA (no subir).md` es la guía de estudio del grupo; no va al Drive.
 
 ## Fuentes de datos
 Historial de charts semanales de Spotify México en kworb.net: [Rosa Pastel](https://kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html) · [Ella Baila Sola](https://kworb.net/spotify/track/3qQbCzHBycnDpGskqOWY0E.html) · [Tití Me Preguntó](https://kworb.net/spotify/track/1IHWl5LamUGEuP4ozKQSXZ.html).

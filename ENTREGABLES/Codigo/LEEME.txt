@@ -1,0 +1,14 @@
+Proyecto "Rosa Pastel" - Taller de Métodos Numéricos (UCC, 2026-2)
+Gatti Pedro, Grillo Facundo y Marin Gonzalo
+
+Cómo correrlo (Python 3):
+  pip install -r requirements.txt
+  python3 analisis_resurgimiento_rosa_pastel.py
+
+Imprime los datos, la tabla de diferencias divididas, las iteraciones de
+bisección y de Newton-Raphson y el ancho de banda; guarda los gráficos en
+graficos/ y la tabla de las 3 canciones en comparacion_canciones.csv.
+
+datos/: reproducciones semanales reales de Spotify México (kworb.net).
+Para otra canción: agregar su CSV (columnas fecha,streams) en datos/ y una
+línea en CANCIONES al principio del script.
