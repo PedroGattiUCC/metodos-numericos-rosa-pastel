@@ -36,6 +36,7 @@ CARPETA = os.path.dirname(os.path.abspath(__file__))
 # Los gráficos van a la carpeta GRAFICOS/ de la raíz del repositorio
 GRAFICOS = os.path.normpath(os.path.join(CARPETA, os.pardir, "GRAFICOS"))
 TOLERANCIA = 1e-4  # error relativo porcentual, igual al trabajo original
+VENTANA_PICO = 6  # semanas a cada lado del máximo de streams semanales
 
 # Supuestos del dimensionamiento (ver informe, sección de aplicación de ingeniería).
 # Son supuestos de planificación, no datos de Spotify.
@@ -96,6 +97,24 @@ def regresion_polinomica(x, y, m):
     A = np.array([[np.sum(x ** (j + k)) for k in range(m + 1)] for j in range(m + 1)])
     b = np.array([np.sum((x ** j) * y) for j in range(m + 1)])
     return eliminacion_gaussiana(A, b), A, b
+
+
+def pico_local(t, S, centro, w=VENTANA_PICO):
+    """Ajusta el acumulado en una ventana y busca el máximo de su derivada."""
+    izquierda = max(0, centro - w)
+    derecha = min(len(t) - 1, centro + w)
+    if derecha - izquierda + 1 < 4:
+        raise ValueError("Se necesitan al menos 4 puntos para la cúbica local.")
+    ascendentes, _, _ = regresion_polinomica(t[izquierda:derecha + 1],
+                                           S[izquierda:derecha + 1], 3)
+    coeficientes = ascendentes[::-1]  # [a, b, c, d], igual que el modelo global
+    a, b, c, d = coeficientes
+    t_pico = -b / (3.0 * a) if a != 0 else None
+    ritmo = float(3.0 * a * t_pico ** 2 + 2.0 * b * t_pico + c) if t_pico is not None else None
+    ventana = (float(t[izquierda]), float(t[derecha]))
+    valido = bool(a < 0 and ventana[0] <= t_pico <= ventana[1])
+    return {"coeficientes": coeficientes, "ventana": ventana,
+            "t_pico": t_pico, "ritmo": ritmo, "valido": valido}
 
 
 def trazadora_cubica_natural(x, y):
@@ -242,6 +261,8 @@ def analizar_cancion(nombre, ruta_csv, meta=100.0, detalle=False):
     t_pico = -b / (3.0 * a) if a != 0 else None
     ritmo_pico = float(derivada(t_pico)) if t_pico is not None else None
     pico_valido = bool(a < 0 and 0 <= t_pico <= n - 1)
+    local = pico_local(t, acumulado, semana_pico_datos)
+    sensibilidad = {w: pico_local(t, acumulado, semana_pico_datos, w) for w in (4, 6, 8)}
 
     resultado = {
         "nombre": nombre, "n": n, "fechas": fechas, "streams": streams,
@@ -256,7 +277,10 @@ def analizar_cancion(nombre, ruta_csv, meta=100.0, detalle=False):
         "pico_valido": pico_valido, "semana_pico_datos": semana_pico_datos,
         "valor_pico_datos": float(streams[semana_pico_datos]),
         "adelante": adelante, "atras": atras, "centrada": centrada,
-        "diagnostico": "aplica" if pico_valido else "no aplica",
+        "pico_local": local, "sensibilidad": sensibilidad,
+        "diagnostico": ("global y local" if pico_valido and local["valido"] else
+                        "solo local" if local["valido"] else
+                        "solo global" if pico_valido else "no aplica"),
         "matriz_normal": matriz_normal, "vector_normal": vector_normal,
         "modelo_creciente": modelo_creciente, "trazadora": trazadora,
         "segundas": segundas, "cambios_signo_d2": cambios_signo_d2,
@@ -355,6 +379,15 @@ def analizar_cancion(nombre, ruta_csv, meta=100.0, detalle=False):
         else:
             motivo = "la inflexión queda fuera de las semanas observadas"
         print(f"{nombre}: la cúbica no detecta el pico ({motivo}).")
+    if detalle:
+        print("\nRegresión cúbica local")
+        print(f"Ventana: [{local['ventana'][0]:.0f}, {local['ventana'][1]:.0f}] semanas (w = {VENTANA_PICO})")
+        al, bl, cl, dl = local["coeficientes"]
+        print(f"Coeficientes: a = {al:.6f}, b = {bl:.6f}, c = {cl:.6f}, d = {dl:.6f}")
+    if local["valido"]:
+        print(f"{nombre}: pico local en t = {local['t_pico']:.2f} semanas, ritmo = {local['ritmo']:.2f} M/semana.")
+    else:
+        print(f"{nombre}: la cúbica local no detecta un pico válido dentro de su ventana.")
     return resultado
 
 
@@ -483,6 +516,10 @@ def fila_comparativa(r):
         "Pico modelo (semana)": f"{r['t_pico_modelo']:.2f}" if r["pico_valido"] else "no detecta",
         "Pico datos (semana)": r["semana_pico_datos"],
         "Pico datos (M/semana)": f"{r['valor_pico_datos']:.3f}",
+        "Pico local (semana)": f"{r['pico_local']['t_pico']:.2f}" if r["pico_local"]["valido"] else "no detecta",
+        "Ritmo pico local (M/semana)": f"{r['pico_local']['ritmo']:.2f}" if r["pico_local"]["valido"] else "no detecta",
+        "Sensibilidad w=4/6/8": "/".join(f"{p['t_pico']:.2f}" if p["valido"] else "no detecta"
+                                       for p in r["sensibilidad"].values()),
         "Diagnóstico": r["diagnostico"],
     }
 
@@ -492,7 +529,7 @@ def guardar_comparacion(resultados):
     columnas = list(filas[0])
     anchos = [max(len(col), *(len(str(fila[col])) for fila in filas)) for col in columnas]
     print("\n5. COMPARACIÓN DE CANCIONES (t = 0 en la primera semana de cada CSV)")
-    print("Diagnóstico: aplica si la cúbica detecta un máximo del ritmo dentro del período.")
+    print("Diagnóstico: global y local / solo local / solo global / no aplica, según los máximos válidos de ambos ajustes.")
     print(" | ".join(col.ljust(ancho) for col, ancho in zip(columnas, anchos)))
     print("-+-".join("-" * ancho for ancho in anchos))
     for fila in filas:
@@ -515,6 +552,14 @@ def graficar_comparacion(resultados):
         if r["pico_valido"]:
             eje.axvline(r["t_pico_modelo"], color='#c0392b', linestyle='--', linewidth=1.8,
                         label=f"Pico del modelo: t = {r['t_pico_modelo']:.1f} sem")
+        local = r["pico_local"]
+        t_local = np.linspace(*local["ventana"], 150)
+        derivada_local = np.poly1d(local["coeficientes"]).deriv()
+        eje.plot(t_local, derivada_local(t_local), color='#168a70', linewidth=2.2,
+                 label=f"Derivada local S'(t), w = {VENTANA_PICO}")
+        if local["valido"]:
+            eje.axvline(local["t_pico"], color='#168a70', linestyle=':', linewidth=1.8,
+                        label=f"Pico local: t = {local['t_pico']:.2f} sem")
         eje.scatter(r["semana_pico_datos"], r["valor_pico_datos"], color='#e67e22', marker='D',
                     s=45, zorder=5, label=f"Pico de los datos: t = {r['semana_pico_datos']} sem")
         eje.set_title(r["nombre"], fontsize=13, fontweight='bold')

@@ -78,11 +78,20 @@ Resolución de $f(t) = S(t) - 100 = 0$ con una tolerancia de convergencia de $\v
 
 A pedido de la cátedra para evaluar la aplicabilidad del método como herramienta general de ingeniería, el flujo se modularizó mediante la función `analizar_cancion(nombre, csv, meta)`. Se contrastó el resurgimiento gradual de *Rosa Pastel* frente a dos estrenos comerciales masivos:
 
-| Canción | Semanas (desde) | Total M | R² | Sy/x M | Hito 100 M (semana, Newton) | Iter. bis./Newton | Pico modelo | Pico datos | Diagnóstico |
-|---|---|---|---|---|---|---|---|---|---|
-| Rosa Pastel (Belanova) | 47 (26/01/2023) | 132.9 | 0.999533 | 0.927 | 35.52 (≈1/10/2023) | 15 / 3 | semana 30.59 | semana 26, 4.171 M | aplica |
-| Ella Baila Sola (Eslabón Armado y Peso Pluma) | 52 (23/03/2023, estreno) | 409.6 | 0.996265 | 6.656 | 3.55 (≈16/04/2023) | 19 / 3 | no detecta (a = +0.005926) | semana 5, 26.140 M | no aplica |
-| Tití Me Preguntó (Bad Bunny) | 52 (12/05/2022, estreno) | 298.3 | 0.999692 | 1.596 | 9.87 (≈20/07/2022) | 17 / 3 | no detecta (a = +0.000279) | semana 6, 9.860 M | no aplica |
+La derivada de una cúbica global, $S'(t)$, es una parábola simétrica alrededor de su vértice.
+En los estrenos, el pico temprano (semana 5–6) va seguido de una cola larga de caída lenta.
+Al ajustar toda la serie por mínimos cuadrados, esa cola domina y resulta $a > 0$: el vértice es un mínimo del ritmo.
+Para detectar el pico se ajusta la misma cúbica de $S(t)$ solo en $[m-6,m+6]$, recortada a $[0,n-1]$, donde $m$ es el máximo semanal medido.
+La función `pico_local` reutiliza las ecuaciones normales y la eliminación gaussiana, sin dependencias nuevas.
+El pico local es $t=-b/(3a)$, válido si $a<0$ y cae dentro de la ventana; su ritmo es $S'(t)$ en ese punto.
+La sensibilidad muestra las semanas del pico con $w=4,6,8$; las variaciones indican cuánto depende de la ventana elegida.
+Los tres casos dan un pico local válido; los cálculos globales, los hitos y el dimensionamiento de Rosa Pastel se conservan.
+
+| Canción | Semanas (desde) | Total M | R² | Sy/x M | Hito 100 M (semana, Newton) | Iter. bis./Newton | Pico modelo global | Pico datos | Pico local (semana) | Ritmo pico local (M/semana) | Sensibilidad w=4/6/8 | Diagnóstico |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Rosa Pastel (Belanova) | 47 (26/01/2023) | 132.9 | 0.999533 | 0.927 | 35.52 (≈1/10/2023) | 15 / 3 | semana 30.59 | semana 26, 4.171 M | 28.58 | 3.78 | 27.01/28.58/29.75 | global y local |
+| Ella Baila Sola (Eslabón Armado y Peso Pluma) | 52 (23/03/2023, estreno) | 409.6 | 0.996265 | 6.656 | 3.55 (≈16/04/2023) | 19 / 3 | no detecta (a = +0.005926) | semana 5, 26.140 M | 3.78 | 23.11 | 3.96/3.78/2.83 | solo local |
+| Tití Me Preguntó (Bad Bunny) | 52 (12/05/2022, estreno) | 298.3 | 0.999692 | 1.596 | 9.87 (≈20/07/2022) | 17 / 3 | no detecta (a = +0.000279) | semana 6, 9.860 M | 6.41 | 9.58 | 5.88/6.41/6.85 | solo local |
 
 ### 🛠️ Cómo analizar otra canción
 
@@ -98,7 +107,7 @@ Para incorporar y procesar una nueva canción con el método generalizado:
        ("Nombre Canción (Artista)", "datos/mi_cancion.csv"),
    ]
    ```
-4. **Ejecutar el script:** Al correr `python3 CODIGO/analisis_resurgimiento_rosa_pastel.py`, el sistema ajustará automáticamente la regresión cúbica, resolverá el hito de streams (bisección y Newton-Raphson, sobre la regresión y la trazadora), calculará las diferencias finitas, validará la regla de concavidad ($a < 0$) y actualizará `CODIGO/comparacion_canciones.csv` y los gráficos de `GRAFICOS/`.
+4. **Ejecutar el script:** Al correr `python3 CODIGO/analisis_resurgimiento_rosa_pastel.py`, el sistema ajustará automáticamente las regresiones cúbicas global y local, resolverá el hito de streams (bisección y Newton-Raphson, sobre la regresión y la trazadora), calculará las diferencias finitas y la sensibilidad de la ventana local, validará los picos ($a < 0$ y dentro del intervalo ajustado) y actualizará `CODIGO/comparacion_canciones.csv` y los gráficos de `GRAFICOS/`.
 
 ---
 
