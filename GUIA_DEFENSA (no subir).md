@@ -29,7 +29,7 @@ La consigna pide **informe escrito** y **presentación oral (~15 min)**, subidos
 
 | Archivo | Qué es |
 |---|---|
-| `Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx` / `.pdf` | Informe (12 páginas) con la estructura de la consigna |
+| `Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx` / `.pdf` | Informe (15 páginas) con la estructura de la consigna; la sección 3.1 justifica por qué elegimos estos métodos y no los otros de los apuntes |
 | `Presentacion_Rosa_Pastel_Metodos_Numericos.pptx` / `.pdf` | Presentación (13 diapositivas) |
 | `Modelo_Numerico_Rosa_Pastel_Belanova.xlsx` | Excel con **fórmulas**: datos, diferencias divididas, bisección y Newton |
 | `Codigo/` | Script de Python, datos (CSV), gráficos, `LEEME.txt` |
@@ -68,6 +68,8 @@ reproducciones semanales ──► acumulado S(t)
 | Bisección | **15 iteraciones**, t* = 35,124481 |
 | Newton-Raphson (t₀ = 35) | **3 iteraciones**, t* = 35,124460 |
 | Hito | **t* ≈ 35,12 semanas → 28 de septiembre de 2023** (0,12 semanas ≈ 0,87 días después del dato del 28/09) |
+| Volumen hasta el hito | 100 M reproducciones × 3,72 MB ≈ **372 TB** transferidos |
+| Control (interpolación lineal) | t = 35,1269 (a 0,4 horas del resultado) |
 | Semana pico | **semana 26 (27/07/2023)** con **4,17 M** reproducciones |
 | Ancho de banda | **≈ 205 Mbps** promedio en esa semana |
 | Otras canciones | Ella Baila Sola: 19/04/2023 (18 / 4 iter.) · Tití Me Preguntó: 21/07/2022 (17 / 3 iter.) |
@@ -266,7 +268,14 @@ Un servicio de streaming tiene que **dimensionar su red** (servidores, enlaces, 
 
 **Fórmula:** Mbps = reproducciones/semana × 160 × 186 ÷ 1000 ÷ 604.800
 
-### 8.3 Cómo interpretarlo
+### 8.3 Volumen transferido hasta el hito (une el método con la aplicación)
+Cuando la canción llegó a los 100 M (t* = 35,12, el resultado de los métodos), ¿cuántos datos se habían enviado?
+1. Por reproducción: 160 kbps × 186 s = 29.760 kilobits ÷ 8 = 3.720 kilobytes = **3,72 MB** (÷ 8 porque 1 byte = 8 bits).
+2. 100.000.000 × 3,72 MB = 372.000.000 MB = **372 TB** (1 TB = 1.000.000 MB).
+
+Sirve para estimar costos de distribución (lo que cobra una CDN por dato enviado). El script lo imprime en la sección 4.
+
+### 8.4 Cómo interpretarlo
 La red tuvo que transferir en promedio **unos 205 megabits por segundo, solo para esta canción y solo en México**, durante la semana pico. Es un **orden de magnitud** (promedio de la semana; en la hora pico real sería más). No calculamos el ancho de banda de las otras canciones porque cada una tiene otra duración y no queremos inventar datos.
 
 ---
@@ -303,7 +312,7 @@ En las tres funciona sin tocar el código. Las dos de comparación son estrenos 
 | 5 | Interpolación de Newton | Pedro | Usamos los 4 datos alrededor de la meta → polinomio de grado 3 que pasa exactamente por ellos. Explicar la tabla (primera fila = coeficientes). No usamos los 47 porque grado 46 oscila. |
 | 6 | Hito de 100 M | Facundo | f(t) = P(t) − 100, intervalo [35, 36] por cambio de signo. Bisección 15 iteraciones, Newton 3. Hacer la iteración de Newton a mano: 35 − (−0,3978/3,2041) = 35,1242. Resultado: 35,12 semanas ≈ 28/09/2023. |
 | 7 | Convergencia | Facundo | El gráfico en escala logarítmica: bisección baja de a poco (lineal), Newton cae de golpe (cuadrática). Bisección = segura, Newton = rápido pero necesita derivada y buen inicio. |
-| 8 | Ancho de banda | Facundo | La cuenta: 4,17 M × 160 kbps × 186 s ÷ 604.800 s ≈ 205 Mbps. Aclarar que son supuestos con fuente y un orden de magnitud. |
+| 8 | Ancho de banda | Facundo | La cuenta: 4,17 M × 160 kbps × 186 s ÷ 604.800 s ≈ 205 Mbps. Agregar de palabra: hasta el hito se transfirieron ≈ 372 TB (100 M × 3,72 MB). Aclarar que son supuestos con fuente y un orden de magnitud. |
 | 9 | Generalización | Gonzalo | Mismo programa, solo cambia el CSV. Probado con Ella Baila Sola y Tití: funciona igual. Sirve para cualquier contenido y cualquier meta. |
 | 10 | Limitaciones | Gonzalo | Solo Spotify México Top 200; datos semanales; interpola, no predice a futuro; supuestos de audio. |
 | 11 | Conclusiones | Gonzalo | Hito 28/09/2023; Newton 3 vs bisección 15; ≈ 205 Mbps. Lo que aprendimos: elegir el método según lo que se tiene (derivada, intervalo) y que con pocos datos bien elegidos alcanza. |
@@ -318,6 +327,7 @@ En las tres funciona sin tocar el código. Las dos de comparación son estrenos 
 3. **¿Por qué interpolación y no regresión?** → Queremos un valor **entre** dos mediciones reales, y la interpolación pasa exactamente por los datos. En clase vimos regresión lineal y modelos linealizables (exponencial, potencial, crecimiento); los probamos y no siguen bien la curva cerca de la meta (corrían el resultado más de una semana).
 4. **¿Por qué 4 puntos y no 2 o 47?** → Con 2 es una recta y no sigue la curvatura. Con 47 sería grado 46 y oscila. 4 cercanos → grado 3, sigue la forma local.
 5. **¿Por qué Newton y no Lagrange?** → Dan **el mismo polinomio** (por n puntos pasa un único polinomio de grado n − 1). Elegimos Newton porque la tabla de diferencias divididas es más fácil de hacer a mano y en Excel.
+5b. **¿Probaron con interpolación lineal (una recta entre las semanas 35 y 36)?** → Sí, como control: da t = 35,1269, a solo 0,4 horas del resultado. La cúbica es mejor porque sigue la curvatura, pero el control muestra que el resultado es coherente.
 6. **¿Por qué no trazadoras (splines)?** → Las trazadoras sirven para muchos puntos sin oscilar, pero requieren resolver un sistema de ecuaciones. Para un solo cruce, 4 puntos alcanzan y es más simple.
 7. **Si ya tienen el polinomio, ¿para qué bisección/Newton?** → Porque P(t) = 100 es una ecuación de **grado 3**: no se despeja t de forma simple. Además así comparamos los dos métodos.
 8. **¿Cómo eligieron el intervalo?** → Por cambio de signo (Bolzano): f(35) < 0 y f(36) > 0.
@@ -326,6 +336,7 @@ En las tres funciona sin tocar el código. Las dos de comparación son estrenos 
 11. **¿Por qué bisección tarda 15 iteraciones?** → El intervalo empieza en 1 semana y se divide por 2 cada vez; para llegar a |Ea| < 0,0001 % (≈ 0,00004 semanas de precisión) hacen falta unas 15 mitades (2¹⁵ ≈ 32.000).
 12. **¿Por qué en "Ella Baila Sola" Newton tardó 4?** → El punto inicial (semana 3) estaba más lejos de la raíz (3,87) que en Rosa Pastel (35 vs. 35,12); igual converge rápido.
 13. **¿Qué significa |Ea|?** → Error relativo porcentual aproximado: cuánto cambió el resultado respecto a la iteración anterior, en %.
+13b. **¿Qué son los 372 TB?** → El volumen total de datos enviado hasta llegar a los 100 M: 100 M × 3,72 MB por reproducción. Es la parte de la aplicación que usa directamente el resultado del método (el hito).
 14. **¿Qué es el 205 Mbps exactamente?** → El **promedio** de tráfico durante la semana de más reproducciones, solo de esta canción en México, suponiendo 160 kbps y 3:06.
 15. **¿Por qué no calcularon el ancho de banda de las otras canciones?** → Porque cada canción dura distinto y no queríamos inventar datos. Se puede hacer cambiando `DURACION_S`.
 16. **¿Qué programaron ustedes y qué hizo una librería?** → Las diferencias divididas, la bisección y Newton-Raphson están programadas a mano (y en el Excel con fórmulas). NumPy solo maneja listas de números y polinomios; Matplotlib hace los gráficos.
@@ -368,6 +379,7 @@ Imprime todas las tablas (datos, diferencias divididas, iteraciones, ancho de ba
 | `biseccion` | El método de la sección 6.3; guarda cada iteración para las tablas |
 | `newton_raphson` | El método de la sección 6.4; avisa si la derivada es casi cero |
 | `mbps` | La cuenta del ancho de banda (sección 8.2) |
+| `volumen_tb` | El volumen hasta el hito en TB (sección 8.3) |
 | `analizar_cancion` | Hace todo para una canción: acumulado, busca el cruce, interpola, raíces, fecha y pico |
 | `imprimir_detalle` | Imprime las tablas de Rosa Pastel |
 | `grafico_interpolacion`, `grafico_convergencia`, `grafico_canciones` | Los 3 gráficos |
