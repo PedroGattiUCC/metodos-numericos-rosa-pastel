@@ -29,8 +29,8 @@ La consigna pide **informe escrito** y **presentación oral (~15 min)**, subidos
 
 | Archivo | Qué es |
 |---|---|
-| `Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx` / `.pdf` | Informe (15 páginas) con la estructura de la consigna; la sección 3.1 justifica por qué elegimos estos métodos y no los otros de los apuntes |
-| `Presentacion_Rosa_Pastel_Metodos_Numericos.pptx` / `.pdf` | Presentación (13 diapositivas) |
+| `Informe_Proyecto_Metodos_Numericos_Rosa_Pastel.docx` / `.pdf` | Informe (16 páginas) con la estructura de la consigna; la sección 3.1 justifica por qué elegimos estos métodos y no los otros de los apuntes |
+| `Presentacion_Rosa_Pastel_Metodos_Numericos.pptx` / `.pdf` | Presentación (14 diapositivas; la 5 justifica la elección de los métodos) |
 | `Modelo_Numerico_Rosa_Pastel_Belanova.xlsx` | Excel con **fórmulas**: datos, diferencias divididas, bisección y Newton |
 | `Codigo/` | Script de Python, datos (CSV), gráficos, `LEEME.txt` |
 
@@ -301,7 +301,7 @@ En las tres funciona sin tocar el código. Las dos de comparación son estrenos 
 ---
 
 ## 10. Qué decir en cada diapositiva (guion, ~15 min)
-**Reparto:** Pedro 1–5 · Facundo 6–8 · Gonzalo 9–11 (12 y 13 son cierre y fuentes).
+**Reparto:** Pedro 1–6 · Facundo 7–9 · Gonzalo 10–12 (13 y 14 son cierre y fuentes).
 
 | # | Diapositiva | Quién | Qué decir (idea, no leer) |
 |---|---|---|---|
@@ -309,15 +309,16 @@ En las tres funciona sin tocar el código. Las dos de comparación son estrenos 
 | 2 | Contexto | Pedro | Canción de 2006, viral en TikTok en 2023. Pasó de ~1,1 M a 4,17 M reproducciones por semana (casi 4 veces). |
 | 3 | Justificación técnica | Pedro | Para un servicio de streaming esto es un problema de **demanda**: hay que dimensionar la red. Los datos son **discretos** (semanales), por eso necesitamos métodos numéricos para estimar entre mediciones. |
 | 4 | Datos | Pedro | 47 semanas de kworb (Top 200 Spotify México), 132,9 M en total. Mostrar el gráfico: el acumulado cruza los 100 M entre las semanas 35 y 36 (zoom a la derecha). |
-| 5 | Interpolación de Newton | Pedro | Usamos los 4 datos alrededor de la meta → polinomio de grado 3 que pasa exactamente por ellos. Explicar la tabla (primera fila = coeficientes). No usamos los 47 porque grado 46 oscila. |
-| 6 | Hito de 100 M | Facundo | f(t) = P(t) − 100, intervalo [35, 36] por cambio de signo. Bisección 15 iteraciones, Newton 3. Hacer la iteración de Newton a mano: 35 − (−0,3978/3,2041) = 35,1242. Resultado: 35,12 semanas ≈ 28/09/2023. |
-| 7 | Convergencia | Facundo | El gráfico en escala logarítmica: bisección baja de a poco (lineal), Newton cae de golpe (cuadrática). Bisección = segura, Newton = rápido pero necesita derivada y buen inicio. |
-| 8 | Ancho de banda | Facundo | La cuenta: 4,17 M × 160 kbps × 186 s ÷ 604.800 s ≈ 205 Mbps. Agregar de palabra: hasta el hito se transfirieron ≈ 372 TB (100 M × 3,72 MB). Aclarar que son supuestos con fuente y un orden de magnitud. |
-| 9 | Generalización | Gonzalo | Mismo programa, solo cambia el CSV. Probado con Ella Baila Sola y Tití: funciona igual. Sirve para cualquier contenido y cualquier meta. |
-| 10 | Limitaciones | Gonzalo | Solo Spotify México Top 200; datos semanales; interpola, no predice a futuro; supuestos de audio. |
-| 11 | Conclusiones | Gonzalo | Hito 28/09/2023; Newton 3 vs bisección 15; ≈ 205 Mbps. Lo que aprendimos: elegir el método según lo que se tiene (derivada, intervalo) y que con pocos datos bien elegidos alcanza. |
-| 12 | Gracias / preguntas | Todos | — |
-| 13 | Fuentes de imágenes | — | No se dice nada. |
+| 5 | ¿Por qué estos métodos? | Pedro | Newton frente a las alternativas de los apuntes: la lineal ignora la curvatura (da 35,127, sirve de control); Lagrange da el mismo polinomio sin la tabla; la trazadora necesita más datos; la regresión del apunte es la recta y no pasa por los datos. Para la raíz, un método cerrado y uno abierto; la secante no hace falta porque la derivada de P(t) es exacta. |
+| 6 | Interpolación de Newton | Pedro | Usamos los 4 datos alrededor de la meta → polinomio de grado 3 que pasa exactamente por ellos. Explicar la tabla (primera fila = coeficientes). No usamos los 47 porque grado 46 oscila. |
+| 7 | Hito de 100 M | Facundo | f(t) = P(t) − 100, intervalo [35; 36] por cambio de signo. Bisección 15 iteraciones, Newton 3. Hacer la iteración de Newton a mano: 35 − (−0,3978/3,2041) = 35,1242. Resultado: 35,12 semanas ≈ 28/09/2023, cerca de las 21 h. |
+| 8 | Convergencia | Facundo | El gráfico en escala logarítmica: bisección baja de a poco (lineal), Newton cae de golpe (cuadrática). Bisección = segura, Newton = rápido pero necesita derivada y buen inicio. |
+| 9 | Volumen y ancho de banda | Facundo | Hito: 100 M × 3,72 MB ≈ 372 TB transferidos. Pico: 4,17 M × 160 kbps × 186 s ÷ 604.800 s ≈ 205 Mbps. Aclarar que son supuestos con fuente y un orden de magnitud. |
+| 10 | Generalización | Gonzalo | Mismo programa, solo cambia el CSV. Probado con Ella Baila Sola y Tití: funciona igual. Sirve para cualquier contenido y cualquier meta. |
+| 11 | Limitaciones | Gonzalo | Solo Spotify México Top 200; datos semanales; interpola, no predice a futuro; supuestos de audio. |
+| 12 | Conclusiones | Gonzalo | Hito 28/09/2023 (≈ 372 TB); Newton 3 vs bisección 15; ≈ 205 Mbps. Lo que aprendimos: elegir el método según lo que se tiene (derivada, intervalo) y que con pocos datos bien elegidos alcanza. |
+| 13 | Gracias / preguntas | Todos | — |
+| 14 | Fuentes de imágenes | — | No se dice nada. |
 
 ---
 
