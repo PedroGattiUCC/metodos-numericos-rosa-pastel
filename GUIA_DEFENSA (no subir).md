@@ -176,8 +176,8 @@ Una **raíz** de f(t) es un valor de t donde **f(t) = 0**. Queremos el t donde P
 
 Cuando f(t) = 0, P(t) vale exactamente 100. Como P es de grado 3, despejar t a mano es complicado → usamos métodos numéricos de raíces.
 
-### 6.2 Elección del intervalo (teorema de Bolzano)
-Si una función continua cambia de signo entre a y b, tiene al menos una raíz entre a y b.
+### 6.2 Elección del intervalo (condición de cambio de signo)
+Es lo que el apunte de Raíces llama **condición de cambio de signo**: si f es continua en [a, b] y **f(a) · f(b) < 0**, hay al menos una raíz entre a y b. (En Análisis Matemático I se lo conoce como **teorema de Bolzano**; el apunte no usa ese nombre, pero es lo mismo.)
 - f(35) = 99,602 − 100 = **−0,3978** (negativo)
 - f(36) = 102,738 − 100 = **+2,7381** (positivo)
 
@@ -330,7 +330,7 @@ En las tres funciona sin tocar el código. Las dos de comparación son estrenos 
 5b. **¿Probaron con interpolación lineal (una recta entre las semanas 35 y 36)?** → Sí, como control: da t = 35,1269, a solo 0,4 horas del resultado. La cúbica es mejor porque sigue la curvatura, pero el control muestra que el resultado es coherente.
 6. **¿Por qué no trazadoras (splines)?** → Las trazadoras sirven para muchos puntos sin oscilar, pero requieren resolver un sistema de ecuaciones. Para un solo cruce, 4 puntos alcanzan y es más simple.
 7. **Si ya tienen el polinomio, ¿para qué bisección/Newton?** → Porque P(t) = 100 es una ecuación de **grado 3**: no se despeja t de forma simple. Además así comparamos los dos métodos.
-8. **¿Cómo eligieron el intervalo?** → Por cambio de signo (Bolzano): f(35) < 0 y f(36) > 0.
+8. **¿Cómo eligieron el intervalo?** → Por la condición de cambio de signo del apunte: f(35) · f(36) < 0 (f(35) < 0 y f(36) > 0), y f es continua.
 9. **¿Por qué x₀ = 35 en Newton?** → Es el extremo del intervalo, está muy cerca de la raíz y f'(35) = 3,2 ≠ 0.
 10. **¿Cuándo falla Newton?** → Si f'(x) ≈ 0 o si x₀ está lejos de la raíz (puede alejarse o ciclar). El programa verifica la derivada.
 11. **¿Por qué bisección tarda 15 iteraciones?** → El intervalo empieza en 1 semana y se divide por 2 cada vez; para llegar a |Ea| < 0,0001 % (≈ 0,00004 semanas de precisión) hacen falta unas 15 mitades (2¹⁵ ≈ 32.000).
@@ -405,7 +405,7 @@ Da exactamente los mismos números que Python.
 - **Acumulado S(t):** total de reproducciones desde el inicio hasta la semana t.
 - **Ancho de banda (Mbps):** cantidad de datos por segundo que pasa por la red (megabits por segundo).
 - **Bitrate (kbps):** cantidad de datos por segundo de audio (kilobits por segundo).
-- **Bolzano (teorema):** si una función continua cambia de signo en [a, b], tiene una raíz ahí.
+- **Cambio de signo (teorema de Bolzano):** si f es continua en [a, b] y f(a)·f(b) < 0, tiene al menos una raíz ahí. El apunte lo usa sin nombrarlo; el nombre viene de Análisis Matemático I.
 - **Convergencia lineal / cuadrática:** qué tan rápido baja el error. Lineal: a ritmo constante. Cuadrática: las cifras correctas se duplican en cada paso.
 - **Diferencias divididas:** cocientes de diferencias que dan los coeficientes del polinomio de Newton.
 - **Interpolación:** polinomio que pasa exactamente por los puntos dados.
