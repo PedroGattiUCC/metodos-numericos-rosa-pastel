@@ -344,6 +344,12 @@ En las tres funciona sin tocar el código. Las dos de comparación son estrenos 
 16. **¿Qué programaron ustedes y qué hizo una librería?** → Las diferencias divididas, la bisección y Newton-Raphson están programadas a mano (y en el Excel con fórmulas). NumPy solo maneja listas de números y polinomios; Matplotlib hace los gráficos.
 17. **¿Usaron inteligencia artificial?** → Sí, Claude y Gemini para programar, hacer gráficos y redactar. Está declarado en el informe. Los datos y los cálculos los verificamos nosotros (el Excel da lo mismo que el programa).
 18. **¿Qué aprendieron?** → Que con datos discretos se puede estimar lo que pasa entre mediciones; que el método de raíces se elige según lo que se tiene (Newton si hay derivada y buen inicio, bisección si se quiere seguridad); y a llevar un problema real a una ecuación.
+19. **"Esto ya pasó: ¿cómo te sirve para prepararte?"** (pregunta difícil, respondan así):
+    - **Primero, la verdad:** sí, es un análisis de algo que ya pasó, y lo decimos en las limitaciones. La interpolación estima **entre** datos medidos; no predice el futuro, y no lo usamos para eso.
+    - **Uno: los datos llegan "de a saltos".** Spotify (o cualquier sistema) registra por períodos: semanas, días, horas. El momento exacto en que se pasó un umbral queda **entre dos registros**, y el método lo reconstruye. Es lo mismo que hace un ingeniero con un registro que mide cada cierto tiempo, por ejemplo para saber cuándo un tanque pasó el nivel máximo.
+    - **Dos: así se dimensiona en ingeniería.** La infraestructura se diseña con **casos históricos**: una represa con las crecidas pasadas, la red eléctrica con la demanda de años anteriores. Este caso deja números concretos de un fenómeno viral: la demanda se multiplicó casi por 4 (de 1,1 M a 4,17 M por semana), hubo un pico de ≈ 205 Mbps y se transfirieron ≈ 372 TB hasta los 100 M. Con eso, la empresa sabe qué esperar y cuánto margen dejar la próxima vez que algo se viralice.
+    - **Tres: el procedimiento queda listo para el próximo caso.** El programa se corre igual con cualquier canción y cualquier meta. Cada semana que llega un dato nuevo se puede volver a correr y saber al instante si se cruzó la meta y cuándo.
+    - **Si insiste en predecir:** para eso habría que ajustar un modelo y **extrapolar**, y el apunte advierte que fuera de los datos el polinomio puede oscilar. Preferimos un resultado confiable entre datos reales antes que una predicción sin respaldo.
 
 ---
 
