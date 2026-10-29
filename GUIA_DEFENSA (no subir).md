@@ -7,7 +7,8 @@
 ## 0. Qué leer la noche anterior (en este orden)
 1. La presentación completa (`ENTREGABLES/…pptx`).
 2. Esta guía: secciones 1 (la historia), 2 (números), 3 (cada método) y 5 (preguntas).
-3. El informe, solo una mirada por arriba.
+3. La sección 6 (el script): cada uno, las funciones de su parte.
+4. El informe, solo una mirada por arriba.
 
 Todos tienen que entender todo: la profe le pregunta a cualquiera.
 
@@ -114,15 +115,17 @@ streams semanales w(t) ──► acumulado S(t)
 
 ---
 
-## 4. Guion (15 min, 3 personas)
+## 4. Guion (15 min, 3 personas; el reparto es el del guion de Facu, en `DOCS/`)
 
 | Min | Diap. | Quién | Qué |
 |---|---|---|---|
-| 0–4 | 1–4 | Integrante 1 | Caso (TikTok 2023), por qué es ingeniería (pronóstico de demanda), datos reales de kworb |
-| 4–9 | 5–8 | Integrante 2 | Mínimos cuadrados + Gauss, R². Hito: bisección vs. Newton (una iteración a mano), trazadora e incertidumbre |
-| 9–15 | 9–13 | Integrante 3 | Derivadas y pico, ancho de banda, generalización (global vs. local), limitaciones y conclusiones |
+| 0–5 | 1–5 | Pedro | Caso (TikTok 2023), por qué es ingeniería (pronóstico de demanda), datos reales de kworb, mínimos cuadrados + Gauss y R² |
+| 5–10 | 6–9 | Facundo | Hito: bisección vs. Newton (una iteración a mano), trazadora e incertidumbre, convergencia, derivadas y pico |
+| 10–15 | 10–14 | Gonzalo | Ancho de banda, generalización (global vs. local), limitaciones y conclusiones |
 
 Muestren ustedes las limitaciones antes de que pregunten.
+
+> **Ojo con el guion de Facu (`DOCS/Guion de la exposición`):** en la diapositiva 11 dice que "el pico solo se detecta en Rosa Pastel" y que "los estrenos arrancan en su pico". Eso era antes de la regresión local. Gonzalo tiene que decir lo de la sección 3.7 de esta guía: con la cúbica global el pico solo sale en Rosa Pastel; con la cúbica local (±6 semanas) sale en las tres. Los estrenos llegan al pico en la semana 5–6, no en la 0.
 
 ---
 
@@ -145,9 +148,73 @@ Muestren ustedes las limitaciones antes de que pregunten.
 
 ---
 
-## 6. Archivos
-- `CODIGO/analisis_resurgimiento_rosa_pastel.py`: el proyecto. `python3 CODIGO/analisis_resurgimiento_rosa_pastel.py` imprime todas las tablas y genera los gráficos de `GRAFICOS/`.
-- `CODIGO/datos/*.csv`: una canción por archivo. Para agregar otra: un CSV + una línea en `CANCIONES`.
-- `ENTREGABLES/`: informe (docx y pdf), presentación (pptx y pdf) y el Excel con fórmulas.
+## 6. Cómo funciona el script (`CODIGO/analisis_resurgimiento_rosa_pastel.py`)
+
+Se corre con `python3 CODIGO/analisis_resurgimiento_rosa_pastel.py`. Imprime todas las tablas (datos, sistema 4×4, iteraciones, diferencias, comparación, dimensionamiento) y guarda los 5 gráficos en `GRAFICOS/` y la tabla `CODIGO/comparacion_canciones.csv`. Son unas 700 líneas, pero los métodos son 10 funciones cortas; el resto es imprimir y graficar.
+
+**Lo primero que van a preguntar: "¿qué hicieron ustedes y qué hizo una librería?"**
+- **A mano:** eliminación gaussiana, ecuaciones normales, trazadora, bisección, Newton-Raphson y diferencias finitas.
+- **NumPy solo para cuentas auxiliares:** vectores, sumatorias (`np.sum`), acumulado (`np.cumsum`) y evaluar/derivar un polinomio ya calculado (`np.poly1d`, `.deriv()`). **No se usa `np.polyfit` ni `np.linalg.solve`**: el sistema lo resuelve nuestra función.
+- **Matplotlib:** solo para los gráficos.
+
+### 6.1 Arriba del archivo: la configuración
+- `CANCIONES`: lista de (nombre, CSV). **Para analizar otra canción se agrega una línea acá** y un CSV en `datos/` con `fecha,streams`.
+- `TOLERANCIA = 1e-4`: el criterio de parada |εa| < 10⁻⁴ %.
+- `VENTANA_PICO = 6`: semanas a cada lado del pico para la cúbica local.
+- Supuestos de ingeniería: `DURACION_S = 186` (3:06), `BITRATES_KBPS = (96, 160, 320)`, `FACTOR_HORA_PICO = 2`, `CAPACIDAD_MBPS = 150`.
+
+### 6.2 Las funciones, una por una (en el orden del archivo)
+
+| Función | Qué hace | Lo que tienen que poder explicar |
+|---|---|---|
+| `cargar_csv(ruta)` | Lee el CSV, ignora las líneas `#` y pasa los streams a millones. | Controla que no haya streams negativos y que las fechas estén separadas por 7 días (si no, h ≠ 1 y las diferencias finitas estarían mal). |
+| `error_porcentual(nuevo, anterior)` | \|εa\| = \|(nuevo − anterior)/nuevo\| · 100. | Es el criterio de parada de bisección y Newton. Si nuevo = 0 evita dividir por cero. |
+| `eliminacion_gaussiana(A, b)` | Arma la matriz ampliada [A \| b]. **Triangulación:** para cada fila i y cada fila k debajo, m_ki = a_ki / a_ii y fila_k = fila_k − m_ki · fila_i. **Sustitución hacia atrás:** x_i = (b_i − Σ a_ij x_j) / a_ii, desde la última fila hacia arriba. | Sin pivoteo; solo frena si un pivote es exactamente 0. La matriz está mal condicionada (κ ≈ 2,3·10¹⁰) pero da igual que NumPy hasta 10⁻¹². |
+| `regresion_polinomica(x, y, m)` | Arma las **ecuaciones normales**: A[j][k] = Σ x^(j+k) y b[j] = Σ x^j · y, para j, k = 0..m, y llama a Gauss. | Con m = 3 es el sistema 4×4. Devuelve [d, c, b, a] (de menor a mayor grado); por eso después se invierte con `[::-1]`. |
+| `pico_local(t, S, centro, w)` | Toma solo las semanas [centro − w, centro + w] (recortadas a [0, n−1]), ajusta ahí la cúbica con `regresion_polinomica` y calcula t = −b/(3a) y el ritmo S'(t) = 3at² + 2bt + c. | **Es la generalización.** Es válido si a < 0 y t cae dentro de la ventana. Exige al menos 4 puntos (4 incógnitas). |
+| `trazadora_cubica_natural(x, y)` | Algoritmo de Burden-Faires, pasos 1 a 6: h_i (paso 1), α_i (paso 2), sistema tridiagonal resuelto con l, μ, z (pasos 3 a 5) y coeficientes b, c, d de cada tramo (paso 6). | Cada tramo es S_i(x) = a_i + b_i(x−x_i) + c_i(x−x_i)² + d_i(x−x_i)³, con a_i = dato. "Natural" = c en los extremos vale 0 (S'' = 0). |
+| `evaluar_trazadora(coefs, nodos, x, derivada)` | Paso 7: busca en qué tramo cae x y evalúa el polinomio, o su 1.ª o 2.ª derivada. | Sirve para hacer bisección y Newton sobre la trazadora (Newton usa la derivada del tramo). |
+| `biseccion(f, a, b)` | Verifica el cambio de signo (si no, error). Repite: xr = (a+b)/2; si f(a)·f(xr) < 0 → b = xr, si no → a = xr; corta cuando \|εa\| < tolerancia. Máximo 100 iteraciones. | Devuelve la raíz, las iteraciones y la tabla. Si no converge devuelve `None` en lugar de una raíz falsa. |
+| `newton_raphson(f, df, x0, limite)` | Repite x_{i+1} = x_i − f(x_i)/f'(x_i) hasta \|εa\| < tolerancia. Máximo 50 iteraciones. | **Controles:** corta si f'(x) ≈ 0 (tangente horizontal) o si el nuevo x se sale de las semanas medidas [0, n−1]. |
+| `diferencias_finitas(S)` | Para cada semana: adelante S(i+1) − S(i), atrás S(i) − S(i−1), centrada [S(i+1) − S(i−1)]/2 (h = 1). | En la primera semana la centrada usa adelante y en la última usa atrás (no hay vecino). Atrás = streams de esa semana. |
+| `analizar_cancion(nombre, csv, meta)` | **El corazón:** junta todo para una canción (ver 6.3). | Devuelve un diccionario con todos los resultados; con `detalle=True` imprime las tablas (solo para Rosa Pastel). |
+| `mbps`, `megabits_por_reproduccion`, `streams_para_mbps` | Conversiones: una reproducción = kbps × 186 s / 1000 megabits; Mbps = streams/semana × megabits ÷ 604 800 s. | Es regla de tres; los supuestos están arriba del archivo. |
+| `dimensionamiento(r)` | Pasa la capacidad C = 150 Mbps a streams por semana y resuelve **g(t) = S'(t) − C = 0** con bisección y Newton (g' = S''). Busca una raíz a cada lado del pico. Calcula también Mbps del pico y TB transferidos. | La raíz izquierda es cuándo la demanda **supera** la capacidad (2/06) y la derecha cuándo **vuelve a bajar** (23/11). Newton arranca en el extremo lejano al pico, porque en el pico S'' = 0 y Newton dividiría por cero. |
+| `main()` | Recorre `CANCIONES`: Rosa Pastel con todo el detalle, sus gráficos 1, 2, 3 y 5 y el dimensionamiento; después la tabla comparativa y el gráfico 4. | El dimensionamiento se hace solo para Rosa Pastel porque la duración (3:06) es de esa canción. |
+
+Las funciones `imprimir_*`, `graficar_*`, `fila_comparativa` y `guardar_comparacion` solo muestran resultados: no calculan nada nuevo.
+
+### 6.3 Qué hace `analizar_cancion`, paso a paso
+1. Lee el CSV y arma t = 0, 1, …, n−1 y el acumulado S = suma acumulada de los streams.
+2. **Regresión cúbica:** ecuaciones normales + Gauss → a, b, c, d. Calcula Sr, St, R² y Sy/x = √(Sr/(n − 4)).
+3. **Validez física:** comprueba que S'(t) > 0 en todo el período (un acumulado no puede bajar).
+4. **Trazadora** sobre los mismos datos.
+5. **Diferencias finitas** → semana del pico de los datos (la de más streams).
+6. **Pico global:** t = −b/(3a), válido si a < 0 y 0 ≤ t ≤ n−1. **Pico local** con ±6 semanas, y sensibilidad con ±4, ±6 y ±8.
+7. **Hito de la meta (100 M):** busca la primera semana k en la que S ≥ 100 → intervalo [k−1, k]. Hace la interpolación lineal de control. Si la regresión no cambia de signo en ese intervalo (pasa en Tití, porque la curva no pasa por los puntos), busca el intervalo donde sí cambia el signo **del modelo**.
+8. **Bisección y Newton** sobre la regresión (x₀ = extremo izquierdo). Calcula la fecha y la incertidumbre Δt = Sy/x ÷ S'(t*).
+9. **Bisección y Newton sobre la trazadora** en [k−1, k] (la trazadora siempre pasa por los datos, así que ahí siempre cambia de signo).
+10. **Diagnóstico:** "global y local", "solo local", "solo global" o "no aplica", según qué picos son válidos.
+
+### 6.4 Si piden "mostrame dónde está X en el código"
+| Les preguntan por… | Vayan a… |
+|---|---|
+| El sistema 4×4 | `regresion_polinomica` (lo arma) y `eliminacion_gaussiana` (lo resuelve) |
+| El criterio de parada | `TOLERANCIA` y `error_porcentual` |
+| Por qué no diverge Newton | Los dos `break` de `newton_raphson` |
+| El pico y la regla a < 0 | `t_pico` y `pico_valido` en `analizar_cancion`, y `pico_local` |
+| El ancho de banda | `mbps` y `dimensionamiento` |
+| Agregar una canción | `CANCIONES` y la carpeta `CODIGO/datos/` |
+
+### 6.5 El Excel (`ENTREGABLES/Modelo_Numerico_Rosa_Pastel_Belanova.xlsx`)
+Los mismos cálculos de Rosa Pastel con fórmulas de Excel, al estilo de las planillas de clase, en 5 hojas: **Datos** (fecha, t, streams y acumulado con fórmula), **Regresion** (coeficientes, S del modelo y residuos), **Biseccion** y **Newton** (una fila por iteración) y **Derivadas** (adelante, atrás y centrada). Sirve para mostrar una iteración "a mano" si la profe la pide.
+
+---
+
+## 7. Archivos
+- `CODIGO/`: el script y los datos (`datos/*.csv`, una canción por archivo).
+- `GRAFICOS/`: los 5 gráficos que genera el script.
+- `ENTREGABLES/`: informe (docx y pdf), presentación (pptx y pdf) y el Excel.
+- `DOCS/`: el guion y la guía de estudio de Facu, en PDF (ver el aviso de la sección 4).
 
 **Fuentes:** [kworb.net — Rosa Pastel](https://kworb.net/spotify/track/6Z0ybnsUBhbZ9ZjPW64eoF.html) · [Chilango (2023)](https://www.chilango.com/agenda/otros/rosa-pastel-tiktok-tendencia/)
