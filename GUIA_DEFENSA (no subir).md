@@ -1,7 +1,7 @@
 # Guía completa — Proyecto "Rosa Pastel" (desde cero) · Cátedra y comisión G (Arnaudo)
 
 > Guía de estudio del grupo (Pedro, Facu, Gonza). **No va al Drive**; lo que se entrega está en `ENTREGABLES/`.
-> Está pensada para alguien que **no sabe nada del tema**: léanla en orden. Si tienen poco tiempo, lean como mínimo las secciones **1, 2, 9 y 10**.
+> Está pensada para alguien que **no sabe nada del tema**: léanla en orden. Si tienen poco tiempo, lean como mínimo las secciones **1, 2, 4b, 10 y 11**.
 > Todo lo que usamos se vio en clase (apuntes de Arnaudo): **interpolación de Newton** (apunte "4 - Ajuste de curvas") y **bisección / Newton-Raphson** (apunte "2 - Raíces de funciones"). Nada más.
 
 ## Índice
@@ -10,6 +10,7 @@
 2. Números para saber de memoria
 3. Conceptos básicos (métodos numéricos, errores, tolerancia)
 4. Los datos
+4b. **Todo el método explicado sin fórmulas (leer esto primero)**
 5. Método 1: interpolación de Newton (paso a paso)
 6. Método 2: raíces — bisección y Newton-Raphson (paso a paso)
 7. Comparación de los dos métodos de raíces
@@ -107,6 +108,75 @@ Una repetición del método: con el valor que tenemos calculamos uno nuevo, mejo
 - **Detalle importante:** S(t) solo se conoce en números enteros de t (una vez por semana). Entre semana y semana no hay datos → por eso **interpolamos**.
 - **Lo que muestran los datos:** la semana 35 (28/09/2023) el acumulado era 99,602 M y la semana 36 (05/10/2023) 102,738 M. O sea, los 100 M se pasaron entre esas dos semanas.
 - **Semana pico:** la semana 26 (27/07/2023) tuvo la mayor cantidad de reproducciones: 4.170.775 (≈ 4,17 M). Al principio tenía ≈ 1,1 M por semana (casi 4 veces menos).
+
+---
+
+## 4b. Todo el método explicado sin fórmulas (leer esto primero)
+
+> Si las secciones 5 a 7 les resultan pesadas, lean esto antes. Es la misma idea contada con palabras simples; después las fórmulas se entienden solas.
+
+### La pregunta
+Imaginen que anotan cuánto marca el cuentakilómetros de un auto **una vez por semana**. Un lunes marca 99.602 km y el lunes siguiente 102.738 km. ¿En qué momento exacto pasó los 100.000 km? No lo anotaron: pasó **entre** las dos mediciones. Con la canción es lo mismo: tenemos el acumulado de reproducciones una vez por semana y los 100 M se cruzaron entre la semana 35 (99,602 M) y la 36 (102,738 M).
+
+Para contestarla hacemos **dos pasos**, y cada uno es un tema distinto de la materia:
+
+```
+ Paso 1: INTERPOLACIÓN                    Paso 2: RAÍCES
+ (apunte "Ajuste de curvas")              (apunte "Raíces de funciones")
+
+ puntos sueltos  ──►  una curva P(t)  ──►  ¿dónde P(t) vale 100?  ──►  t* = 35,12
+ (datos semanales)    que pasa por ellos     bisección y Newton-Raphson
+```
+
+### Paso 1 — Interpolación: "unir los puntos con una curva"
+- Tenemos puntos sueltos. Entre dos puntos no sabemos nada. Para poder preguntar "¿cuánto valía en t = 35,3?" necesitamos **una fórmula**, no puntos.
+- Interpolar es **inventar la curva más simple que pase exactamente por los puntos medidos**. Esa curva es un polinomio P(t).
+- Tomamos solo **4 puntos** (semanas 34, 35, 36 y 37), los que rodean la meta. ¿Por qué 4?
+  - Con 2 sería una **recta**: la unión más simple, pero las reproducciones por semana iban bajando un poco (3,25 → 3,14 → 2,96 M), o sea, la curva está "doblada" y la recta no lo ve.
+  - Con los 47 sería un polinomio de grado 46 que **se vuelve loco** (oscila) entre los puntos.
+  - Con 4 sale un polinomio de **grado 3**: suficientemente flexible para seguir la curva en esa zona, y simple.
+- **¿Qué es Newton (diferencias divididas)?** Es solo **la receta para encontrar los números** del polinomio. Se hace una tabla:
+  - 1ra columna de diferencias = cuánto sube de una semana a la otra (son las reproducciones de cada semana: 3,25 / 3,14 / 2,96).
+  - 2da columna = cuánto **cambia** esa subida (es negativa: cada semana sube un poco menos).
+  - 3ra columna = cuánto cambia el cambio.
+  - Los números de **la primera fila** de la tabla son los coeficientes del polinomio. Listo.
+- **Lagrange** daría **el mismo polinomio** (por 4 puntos pasa un único polinomio de grado 3); elegimos Newton porque la tabla es más fácil a mano y en Excel.
+
+### Paso 2 — Raíces: "buscar dónde la curva vale 100"
+- Ahora tenemos P(t) y queremos el t donde P(t) = 100. Es una ecuación de grado 3: despejar t a mano no es simple.
+- Truco de la materia: pasar todo a un lado → **f(t) = P(t) − 100**. Buscar dónde P vale 100 es lo mismo que buscar dónde **f vale 0** (eso se llama **raíz**).
+- f(35) = −0,398 (todavía faltaba para 100) y f(36) = +2,738 (ya había pasado). Cambió de signo → **la raíz está entre 35 y 36**.
+
+**Bisección = "partir a la mitad" (como adivinar un número del 1 al 100 diciendo "más alto / más bajo")**
+1. Miro la mitad del intervalo: t = 35,5. ¿f es positiva o negativa ahí? Positiva → ya se había pasado de 100 → la raíz está en la mitad izquierda [35; 35,5].
+2. Miro la mitad de esa mitad: 35,25 → positiva → [35; 35,25].
+3. 35,125 → positiva (apenas) → [35; 35,125].
+4. 35,0625 → negativa → ahora [35,0625; 35,125].
+5. … y así hasta que el resultado casi no cambia entre una vuelta y la siguiente.
+- Cada vuelta **reduce el intervalo a la mitad**. Nunca falla (si hay cambio de signo, la raíz no se escapa): por eso el apunte dice que es **confiable**. Pero avanza de a poco: **convergencia lenta** → **15 vueltas**.
+
+**Newton-Raphson = "seguir la pendiente"**
+1. Estoy en t = 35. Sé cuánto me falta: f(35) = −0,398 (faltan 0,398 M).
+2. Sé a qué ritmo sube la curva ahí: la derivada f'(35) = 3,204 M por semana.
+3. Si sigo a ese ritmo, ¿cuánto tardo en cubrir lo que falta? 0,398 / 3,204 = 0,124 semanas → salto a **t = 35,124**.
+4. Repito desde el nuevo punto: el salto ya es diminuto (35,12446). Tercera vuelta: no cambia → listo.
+- Geométricamente es trazar la **recta tangente** y ver dónde corta el eje. Es **rápido** (3 vueltas), pero necesita la **derivada** y **un valor inicial cerca** de la raíz; si arrancás lejos o la curva es muy plana, **puede divergir** (irse lejos). Como no necesita un intervalo, el apunte lo llama **método abierto**.
+
+**¿Cuándo paramos? (tolerancia)** En cada vuelta comparamos el resultado nuevo con el anterior: **|Ea| = |(nuevo − anterior) / nuevo| × 100**. Cuando cambia menos de 0,0001 %, paramos.
+
+### Paso 3 — De "35,12 semanas" a una fecha
+- t = 35 es la semana del 28/09/2023. Sobran 0,12446 semanas × 7 días = **0,87 días** → el 28/09/2023, cerca de las 21 h.
+- Los dos métodos dan lo mismo (35,124481 y 35,124460: diferencia menor a la tolerancia) → el resultado es confiable.
+
+### Paso 4 — ¿Y la ingeniería?
+- Cada reproducción de 3:06 a 160 kbps son ≈ 3,72 MB. Hasta los 100 M: 100 M × 3,72 MB ≈ **372 TB** que la red tuvo que mandar.
+- En la semana pico (4,17 M reproducciones) eso, repartido en los segundos de una semana, da ≈ **205 Mbps** de promedio: es el dato para dimensionar la red.
+
+### Resumen en 4 frases (para decirlo en la defensa)
+1. "Los datos son semanales y el cruce de los 100 M cayó entre dos mediciones."
+2. "Con interpolación de Newton armamos un polinomio que pasa por los 4 datos más cercanos."
+3. "Buscamos dónde ese polinomio vale 100 como una raíz de f(t) = P(t) − 100, con bisección (confiable, 15 iteraciones) y Newton-Raphson (rápido, 3 iteraciones)."
+4. "Da 35,12 semanas, el 28/09/2023, y con eso estimamos el tráfico: 372 TB hasta el hito y 205 Mbps en la semana pico."
 
 ---
 
