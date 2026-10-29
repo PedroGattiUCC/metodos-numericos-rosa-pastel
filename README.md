@@ -20,6 +20,7 @@ Supuestos: duración de 3:06 ([Dulce Beat, Wikipedia](https://es.wikipedia.org/w
 - Los datos muestran que el acumulado pasa de 99,60 M (semana 35) a 102,74 M (semana 36).
 - Interpolación con las semanas 34 a 37: P(t) = 96,349 + 3,25351(t−34) − 0,05879(t−34)(t−35) − 0,009340(t−34)(t−35)(t−36).
 - Hito de 100 M: t* = 35,12 semanas (≈ 28/09/2023). Bisección: 15 iteraciones. Newton-Raphson: 3.
+- Volumen transferido al llegar a 100 M: ≈ **372 TB** (3,72 MB por reproducción a 160 kbps).
 - Semana pico: 26 (27/07/2023), con 4,17 M de reproducciones ≈ **205 Mbps** de promedio.
 
 ## El mismo método en otras canciones

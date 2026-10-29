@@ -113,6 +113,11 @@ def mbps(millones_por_semana):
     return millones_por_semana * 1e6 * megabits_por_reproduccion / SEGUNDOS_SEMANA
 
 
+def volumen_tb(millones_acumulados):
+    """Volumen transferido: reproducciones x (kbps x s / 8) kilobytes, pasado a terabytes."""
+    return millones_acumulados * 1e6 * BITRATE_KBPS * DURACION_S / 8 / 1e9
+
+
 def analizar_cancion(nombre, ruta, detalle=False):
     fechas, streams = cargar_csv(ruta)
     t = np.arange(len(streams), dtype=float)
@@ -181,10 +186,11 @@ def imprimir_detalle(r):
     print(f">> t* = {r['raiz_n']:.6f} semanas en {len(r['reg_n'])} iteraciones -> {r['fecha_hito']:%d/%m/%Y}")
 
     print("\n" + "=" * 70)
-    print("4. APLICACIÓN: ANCHO DE BANDA EN LA SEMANA PICO")
+    print("4. APLICACIÓN: VOLUMEN HASTA EL HITO Y ANCHO DE BANDA EN LA SEMANA PICO")
     print("=" * 70)
     p = r["pico"]
     print(f"Supuestos: {DURACION_S} s por reproducción a {BITRATE_KBPS} kbps (órdenes de magnitud).")
+    print(f"Volumen transferido al llegar a {META:g} M (t* = {r['raiz_n']:.2f}): {volumen_tb(META):.0f} TB")
     print(f"Semana pico: {p} ({r['fechas'][p]}) con {r['streams'][p]:.3f} M de reproducciones")
     print(f"Ancho de banda promedio en esa semana: {r['mbps_pico']:.1f} Mbps")
 
