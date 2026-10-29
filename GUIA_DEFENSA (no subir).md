@@ -2,7 +2,7 @@
 
 > Guía de estudio del grupo (Pedro, Facu, Gonza). **No va al Drive**; lo que se entrega está en `ENTREGABLES/`.
 > Está pensada para alguien que **no sabe nada del tema**: léanla en orden. Si tienen poco tiempo, lean como mínimo las secciones **1, 2, 9 y 10**.
-> Todo lo que usamos se vio en clase (apuntes de Arnaudo): **interpolación de Newton** (unidad 4, Ajuste de curvas) y **bisección / Newton-Raphson** (unidad 2, Raíces). Nada más.
+> Todo lo que usamos se vio en clase (apuntes de Arnaudo): **interpolación de Newton** (apunte "4 - Ajuste de curvas") y **bisección / Newton-Raphson** (apunte "2 - Raíces de funciones"). Nada más.
 
 ## Índice
 0. Qué hay que entregar y dónde está
@@ -310,7 +310,7 @@ En las tres funciona sin tocar el código. Las dos de comparación son estrenos 
 | 2 | Contexto | Pedro | Canción de 2006, viral en TikTok en 2023. Pasó de ~1,1 M a 4,17 M reproducciones por semana (casi 4 veces). |
 | 3 | Justificación técnica | Pedro | Para un servicio de streaming esto es un problema de **demanda**: hay que dimensionar la red. Los datos son **discretos** (semanales), por eso necesitamos métodos numéricos para estimar entre mediciones. |
 | 4 | Datos | Pedro | 47 semanas de kworb (Top 200 Spotify México), 132,9 M en total. Mostrar el gráfico: el acumulado cruza los 100 M entre las semanas 35 y 36 (zoom a la derecha). |
-| 5 | ¿Por qué estos métodos? | Pedro | Newton frente a las alternativas de los apuntes: la lineal ignora la curvatura (da 35,127, sirve de control); Lagrange da el mismo polinomio sin la tabla; la trazadora necesita más datos; la regresión del apunte es la recta y no pasa por los datos. Para la raíz, uno que trabaja con un intervalo (bisección) y uno abierto (Newton); la secante no hace falta porque la derivada de P(t) es exacta. |
+| 5 | ¿Por qué estos métodos? | Pedro | Newton frente a las alternativas de los apuntes: la lineal ignora la curvatura (da 35,127, sirve de control); Lagrange da el mismo polinomio sin la tabla; la regresión del apunte es la recta y no pasa por los datos. Para la raíz, uno que trabaja con un intervalo (bisección) y uno abierto (Newton); la secante no hace falta porque la derivada de P(t) es exacta. |
 | 6 | Interpolación de Newton | Pedro | Usamos los 4 datos alrededor de la meta → polinomio de grado 3 que pasa exactamente por ellos. Explicar la tabla (primera fila = coeficientes). No usamos los 47 porque grado 46 oscila. |
 | 7 | Hito de 100 M | Facundo | f(t) = P(t) − 100, intervalo [35; 36] por cambio de signo. Bisección 15 iteraciones, Newton 3. Hacer la iteración de Newton a mano: 35 − (−0,3978/3,2041) = 35,1242. Resultado: 35,12 semanas ≈ 28/09/2023, cerca de las 21 h. |
 | 8 | Convergencia | Facundo | El gráfico en escala logarítmica: bisección baja de a poco (convergencia lenta), Newton cae de golpe (convergencia rápida). Bisección = segura, Newton = rápido pero necesita derivada y buen inicio. |
