@@ -5,7 +5,7 @@ Taller de Métodos Numéricos - Universidad Católica de Córdoba (UCC)
 Docente: Ing. Carlos Arnaudo
 Proyecto Integrador: Modelado Numérico del Resurgimiento de 'Rosa Pastel' (Belanova)
 Alumnos: Gatti Pedro, Grillo Facundo, Marin Gonzalo
-Comisión: 46324 - Ciclo Lectivo: 2026-2
+Cátedra G - Comisión: 46324 - Ciclo Lectivo: 2026-2
 
 Métodos usados (todos de la materia):
   1. Interpolación polinomial de Newton (diferencias divididas) con los 4 datos

@@ -1,4 +1,4 @@
-# Guía completa — Proyecto "Rosa Pastel" (desde cero)
+# Guía completa — Proyecto "Rosa Pastel" (desde cero) · Cátedra G (Arnaudo), comisión 46324
 
 > Guía de estudio del grupo (Pedro, Facu, Gonza). **No va al Drive**; lo que se entrega está en `ENTREGABLES/`.
 > Está pensada para alguien que **no sabe nada del tema**: léanla en orden. Si tienen poco tiempo, lean como mínimo las secciones **1, 2, 9 y 10**.

@@ -1,4 +1,4 @@
-Proyecto "Rosa Pastel" - Taller de Métodos Numéricos (UCC, 2026-2)
+Proyecto "Rosa Pastel" - Taller de Métodos Numéricos (UCC, Cátedra G, 2026-2)
 Gatti Pedro, Grillo Facundo y Marin Gonzalo
 
 Cómo correrlo (Python 3):

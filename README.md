@@ -1,7 +1,7 @@
 # Modelado numérico del resurgimiento de "Rosa Pastel" (Belanova)
 
 Proyecto integrador de **Taller de Métodos Numéricos**, Universidad Católica de Córdoba.
-Docente: Ing. Carlos Arnaudo · Comisión 46324 · 2026-2.
+Docente: Ing. Carlos Arnaudo · Cátedra G · Comisión 46324 · 2026-2.
 Integrantes: Pedro Gatti, Facundo Grillo y Gonzalo Marin.
 
 ## Objetivo
