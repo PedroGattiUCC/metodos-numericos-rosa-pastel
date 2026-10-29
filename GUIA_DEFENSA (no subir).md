@@ -176,14 +176,14 @@ Una **raíz** de f(t) es un valor de t donde **f(t) = 0**. Queremos el t donde P
 
 Cuando f(t) = 0, P(t) vale exactamente 100. Como P es de grado 3, despejar t a mano es complicado → usamos métodos numéricos de raíces.
 
-### 6.2 Elección del intervalo (condición de cambio de signo)
-Es lo que el apunte de Raíces llama **condición de cambio de signo**: si f es continua en [a, b] y **f(a) · f(b) < 0**, hay al menos una raíz entre a y b. (En Análisis Matemático I se lo conoce como **teorema de Bolzano**; el apunte no usa ese nombre, pero es lo mismo.)
+### 6.2 Elección del intervalo (cambio de signo)
+Como dice el apunte de Raíces: si f es continua en [a, b] y **f(a) · f(b) < 0** (cambia de signo), hay al menos una raíz entre a y b.
 - f(35) = 99,602 − 100 = **−0,3978** (negativo)
 - f(36) = 102,738 − 100 = **+2,7381** (positivo)
 
 → La raíz está en **[35, 36]**. El programa busca solo esta semana: la primera donde el acumulado pasa de estar debajo de 100 a estar arriba.
 
-### 6.3 Bisección (método cerrado)
+### 6.3 Bisección
 **Idea:** partir el intervalo a la mitad una y otra vez, quedándose siempre con la mitad donde f cambia de signo.
 
 Pasos:
@@ -202,9 +202,10 @@ Pasos:
 | 15 | 35,12445 | 35,12451 | **35,124481** | 0,00007 | \|Ea\| < 0,0001 % → **para** | 0,000087 |
 
 **Características:**
-- **Cerrado:** necesita un intervalo con cambio de signo.
-- **Siempre converge** (si hay cambio de signo, nunca falla).
-- **Lento:** el intervalo se reduce a la mitad por iteración (convergencia **lineal**). Por eso tarda **15 iteraciones**.
+- **Necesita un intervalo** con cambio de signo.
+- **Confiable:** si hay cambio de signo, siempre llega a la raíz.
+- **Convergencia lenta** (inconveniente que marca el apunte): el intervalo solo se reduce a la mitad por iteración. Por eso tarda **15 iteraciones**.
+- Otro inconveniente del apunte: no sirve si la raíz no produce cambio de signo (raíces múltiples de orden par).
 
 ### 6.4 Newton-Raphson (método abierto)
 **Idea:** parado en un punto, trazamos la **recta tangente** a la curva y vemos dónde corta el eje (donde valdría 0). Ese corte es la nueva aproximación.
@@ -227,9 +228,9 @@ f'(t) = P'(t) = −0,028020 t² + 1,843862 t − 27,005993
 | 3 | 35,124460 | ≈ 0 | 3,1890 | **35,124460** | ≈ 0 → **para** |
 
 **Características:**
-- **Abierto:** no necesita intervalo, solo un punto inicial x₀.
-- **Muy rápido:** convergencia **cuadrática** (la cantidad de cifras correctas aproximadamente se duplica en cada iteración). Por eso solo **3 iteraciones**.
-- **Puede fallar:** si f'(x) ≈ 0 (la tangente es horizontal y no corta el eje) o si x₀ está lejos de la raíz. El programa avisa si la derivada es casi cero. Acá f'(35) = 3,2 ≠ 0 y x₀ está muy cerca, así que anda perfecto.
+- **Método abierto:** no necesita intervalo, solo un valor inicial x₀ cercano a la raíz.
+- **Alto grado de convergencia (rápido):** el apunte lo destaca como el método más usado en ingeniería. Por eso solo **3 iteraciones**.
+- **Puede divergir** (inconvenientes del apunte): en curvas muy "planas" la tangente lleva lejos, y si la función es complicada obtener la derivada es tedioso. También falla si f'(x) ≈ 0 (tangente horizontal). El programa avisa si la derivada es casi cero. Acá f'(35) = 3,2 ≠ 0 y x₀ está muy cerca, así que anda perfecto.
 
 ### 6.5 Resultado
 - Bisección: t* = 35,124481 · Newton: t* = 35,124460. Coinciden en **35,1245** (la diferencia es menor que la tolerancia).
@@ -240,10 +241,10 @@ f'(t) = P'(t) = −0,028020 t² + 1,843862 t − 27,005993
 ## 7. Comparación de los dos métodos de raíces
 | | Bisección | Newton-Raphson |
 |---|---|---|
-| Tipo | Cerrado (intervalo) | Abierto (un punto) |
+| Arranca con | Un intervalo con cambio de signo | Un valor inicial (método abierto) |
 | Necesita | Cambio de signo en [a, b] | f'(x) y un buen x₀ |
-| Convergencia | Lineal | Cuadrática |
-| ¿Siempre converge? | Sí | No garantizado |
+| Convergencia | Lenta | Rápida (alto grado de convergencia) |
+| ¿Siempre llega? | Sí (confiable) | No siempre (puede divergir) |
 | Iteraciones (Rosa Pastel) | 15 | 3 |
 | Resultado | 35,124481 | 35,124460 |
 
@@ -309,10 +310,10 @@ En las tres funciona sin tocar el código. Las dos de comparación son estrenos 
 | 2 | Contexto | Pedro | Canción de 2006, viral en TikTok en 2023. Pasó de ~1,1 M a 4,17 M reproducciones por semana (casi 4 veces). |
 | 3 | Justificación técnica | Pedro | Para un servicio de streaming esto es un problema de **demanda**: hay que dimensionar la red. Los datos son **discretos** (semanales), por eso necesitamos métodos numéricos para estimar entre mediciones. |
 | 4 | Datos | Pedro | 47 semanas de kworb (Top 200 Spotify México), 132,9 M en total. Mostrar el gráfico: el acumulado cruza los 100 M entre las semanas 35 y 36 (zoom a la derecha). |
-| 5 | ¿Por qué estos métodos? | Pedro | Newton frente a las alternativas de los apuntes: la lineal ignora la curvatura (da 35,127, sirve de control); Lagrange da el mismo polinomio sin la tabla; la trazadora necesita más datos; la regresión del apunte es la recta y no pasa por los datos. Para la raíz, un método cerrado y uno abierto; la secante no hace falta porque la derivada de P(t) es exacta. |
+| 5 | ¿Por qué estos métodos? | Pedro | Newton frente a las alternativas de los apuntes: la lineal ignora la curvatura (da 35,127, sirve de control); Lagrange da el mismo polinomio sin la tabla; la trazadora necesita más datos; la regresión del apunte es la recta y no pasa por los datos. Para la raíz, uno que trabaja con un intervalo (bisección) y uno abierto (Newton); la secante no hace falta porque la derivada de P(t) es exacta. |
 | 6 | Interpolación de Newton | Pedro | Usamos los 4 datos alrededor de la meta → polinomio de grado 3 que pasa exactamente por ellos. Explicar la tabla (primera fila = coeficientes). No usamos los 47 porque grado 46 oscila. |
 | 7 | Hito de 100 M | Facundo | f(t) = P(t) − 100, intervalo [35; 36] por cambio de signo. Bisección 15 iteraciones, Newton 3. Hacer la iteración de Newton a mano: 35 − (−0,3978/3,2041) = 35,1242. Resultado: 35,12 semanas ≈ 28/09/2023, cerca de las 21 h. |
-| 8 | Convergencia | Facundo | El gráfico en escala logarítmica: bisección baja de a poco (lineal), Newton cae de golpe (cuadrática). Bisección = segura, Newton = rápido pero necesita derivada y buen inicio. |
+| 8 | Convergencia | Facundo | El gráfico en escala logarítmica: bisección baja de a poco (convergencia lenta), Newton cae de golpe (convergencia rápida). Bisección = segura, Newton = rápido pero necesita derivada y buen inicio. |
 | 9 | Volumen y ancho de banda | Facundo | Hito: 100 M × 3,72 MB ≈ 372 TB transferidos. Pico: 4,17 M × 160 kbps × 186 s ÷ 604.800 s ≈ 205 Mbps. Aclarar que son supuestos con fuente y un orden de magnitud. |
 | 10 | Generalización | Gonzalo | Mismo programa, solo cambia el CSV. Probado con Ella Baila Sola y Tití: funciona igual. Sirve para cualquier contenido y cualquier meta. |
 | 11 | Limitaciones | Gonzalo | Solo Spotify México Top 200; datos semanales; interpola, no predice a futuro; supuestos de audio. |
@@ -331,7 +332,7 @@ En las tres funciona sin tocar el código. Las dos de comparación son estrenos 
 5b. **¿Probaron con interpolación lineal (una recta entre las semanas 35 y 36)?** → Sí, como control: da t = 35,1269, a solo 0,4 horas del resultado. La cúbica es mejor porque sigue la curvatura, pero el control muestra que el resultado es coherente.
 6. **¿Por qué no trazadoras (splines)?** → Las trazadoras sirven para muchos puntos sin oscilar, pero requieren resolver un sistema de ecuaciones. Para un solo cruce, 4 puntos alcanzan y es más simple.
 7. **Si ya tienen el polinomio, ¿para qué bisección/Newton?** → Porque P(t) = 100 es una ecuación de **grado 3**: no se despeja t de forma simple. Además así comparamos los dos métodos.
-8. **¿Cómo eligieron el intervalo?** → Por la condición de cambio de signo del apunte: f(35) · f(36) < 0 (f(35) < 0 y f(36) > 0), y f es continua.
+8. **¿Cómo eligieron el intervalo?** → Por cambio de signo, como en el apunte: f(35) · f(36) < 0 (f(35) < 0 y f(36) > 0), y f es continua.
 9. **¿Por qué x₀ = 35 en Newton?** → Es el extremo del intervalo, está muy cerca de la raíz y f'(35) = 3,2 ≠ 0.
 10. **¿Cuándo falla Newton?** → Si f'(x) ≈ 0 o si x₀ está lejos de la raíz (puede alejarse o ciclar). El programa verifica la derivada.
 11. **¿Por qué bisección tarda 15 iteraciones?** → El intervalo empieza en 1 semana y se divide por 2 cada vez; para llegar a |Ea| < 0,0001 % (≈ 0,00004 semanas de precisión) hacen falta unas 15 mitades (2¹⁵ ≈ 32.000).
@@ -406,13 +407,13 @@ Da exactamente los mismos números que Python.
 - **Acumulado S(t):** total de reproducciones desde el inicio hasta la semana t.
 - **Ancho de banda (Mbps):** cantidad de datos por segundo que pasa por la red (megabits por segundo).
 - **Bitrate (kbps):** cantidad de datos por segundo de audio (kilobits por segundo).
-- **Cambio de signo (teorema de Bolzano):** si f es continua en [a, b] y f(a)·f(b) < 0, tiene al menos una raíz ahí. El apunte lo usa sin nombrarlo; el nombre viene de Análisis Matemático I.
-- **Convergencia lineal / cuadrática:** qué tan rápido baja el error. Lineal: a ritmo constante. Cuadrática: las cifras correctas se duplican en cada paso.
+- **Cambio de signo:** si f es continua en [a, b] y f(a)·f(b) < 0, tiene al menos una raíz ahí.
+- **Convergencia lenta / rápida:** qué tan rápido baja el error. Bisección: lenta. Newton-Raphson: alto grado de convergencia (rápida).
 - **Diferencias divididas:** cocientes de diferencias que dan los coeficientes del polinomio de Newton.
 - **Interpolación:** polinomio que pasa exactamente por los puntos dados.
 - **Iteración:** cada repetición de un método.
 - **kworb.net:** sitio que recopila los rankings oficiales de Spotify.
-- **Método cerrado / abierto:** cerrado necesita un intervalo con la raíz adentro (bisección); abierto arranca desde un punto (Newton).
+- **Método abierto:** arranca desde un valor inicial y no necesita que la raíz esté dentro de un intervalo (Newton-Raphson, secante, punto fijo). Bisección, en cambio, trabaja con un intervalo con cambio de signo.
 - **Raíz:** valor donde la función vale 0.
 - **Tolerancia:** error máximo aceptado para parar.
 - **Top 200:** ranking semanal de las 200 canciones más escuchadas en un país.
